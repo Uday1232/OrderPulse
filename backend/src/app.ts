@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
 import { env } from './config/env';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
@@ -27,7 +28,10 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Lightweight request logging middleware for major events
+// Serve static uploaded photos
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Lightweight request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -41,7 +45,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Mount API routes
+// Mount API routes at /api/v1 (and / for backward compatibility)
+app.use('/api/v1', routes);
 app.use('/', routes);
 
 // Handle 404

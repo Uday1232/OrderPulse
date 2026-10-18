@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { OrderController } from '../controllers/order.controller';
 import { validateRequest } from '../middlewares/validate';
+import { authenticate, authorizeRoles } from '../middlewares/auth';
 import {
   CreateOrderSchema,
   GetOrdersQuerySchema,
@@ -10,7 +11,7 @@ import {
 
 const router = Router();
 
-// POST /orders - Create a new order
+// POST /orders - Create a new order (Public or Authenticated User/Guest)
 router.post(
   '/',
   validateRequest({ body: CreateOrderSchema }),
@@ -31,9 +32,11 @@ router.get(
   OrderController.getOrderById
 );
 
-// PATCH /orders/:id/status - Update order status with row-level locking
+// PATCH /orders/:id/status - Admin only: Update order status with row-level locking
 router.patch(
   '/:id/status',
+  authenticate,
+  authorizeRoles('ADMIN'),
   validateRequest({
     params: OrderIdParamSchema,
     body: UpdateOrderStatusSchema,

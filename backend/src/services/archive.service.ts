@@ -21,14 +21,13 @@ export class ArchiveService {
         WITH moved_orders AS (
           DELETE FROM "orders"
           WHERE "created_at" < NOW() - (${daysThreshold} || ' days')::INTERVAL
-          RETURNING id, store_id, items, total_amount, status, created_at, NOW() AS archived_at
+          RETURNING id, store_id, user_id, items, total_amount, status, payment_method, payment_status, created_at, NOW() AS archived_at
         )
-        INSERT INTO "orders_archive" (id, store_id, items, total_amount, status, created_at, archived_at)
-        SELECT id, store_id, items, total_amount, status, created_at, archived_at FROM moved_orders;
+        INSERT INTO "orders_archive" (id, store_id, user_id, items, total_amount, status, payment_method, payment_status, created_at, archived_at)
+        SELECT id, store_id, user_id, items, total_amount, status, payment_method, payment_status, created_at, archived_at FROM moved_orders;
       `;
 
       const affectedCount = await tx.$executeRawUnsafe(query);
-
       return affectedCount;
     });
 

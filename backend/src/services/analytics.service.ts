@@ -88,12 +88,12 @@ export class AnalyticsService {
       // 3. Top 5 selling items by quantity sold from JSONB
       prisma.$queryRaw<TopSellingItemStat[]>`
         SELECT
-          item.name AS item_name,
-          SUM(item.quantity)::int AS total_quantity_sold,
-          COALESCE(ROUND(SUM(item.quantity * item.unit_price)::numeric, 2), 0)::float AS total_revenue
+          COALESCE(item->>'name', 'Unknown') AS item_name,
+          SUM(COALESCE((item->>'qty')::int, (item->>'quantity')::int, 1))::int AS total_quantity_sold,
+          COALESCE(ROUND(SUM(COALESCE((item->>'qty')::int, (item->>'quantity')::int, 1) * COALESCE((item->>'price')::numeric, (item->>'unit_price')::numeric, 0)), 2), 0)::float AS total_revenue
         FROM "orders",
-        jsonb_to_recordset("items") AS item(name text, quantity int, unit_price numeric)
-        GROUP BY item.name
+        jsonb_array_elements("items") AS item
+        GROUP BY COALESCE(item->>'name', 'Unknown')
         ORDER BY total_quantity_sold DESC
         LIMIT 5;
       `,

@@ -407,10 +407,10 @@ function UpdateOrderStatusContent() {
                     {order.items.map((item, idx) => (
                       <TableRow key={idx} sx={{ '& td': { borderColor: 'rgba(255, 255, 255, 0.05)', color: '#E5E7EB' } }}>
                         <TableCell sx={{ fontWeight: 600 }}>{item.name}</TableCell>
-                        <TableCell align="center">{item.quantity}x</TableCell>
-                        <TableCell align="right">${Number(item.unit_price).toFixed(2)}</TableCell>
+                        <TableCell align="center">{item.quantity || item.qty || 1}x</TableCell>
+                        <TableCell align="right">${Number(item.unit_price || item.price || 0).toFixed(2)}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                          ${Number(item.subtotal || item.quantity * item.unit_price).toFixed(2)}
+                          ${Number(item.subtotal || ((item.quantity || item.qty || 1) * (item.unit_price || item.price || 0))).toFixed(2)}
                         </TableCell>
                       </TableRow>
                     ))}

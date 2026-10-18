@@ -22,6 +22,10 @@ coverage/
 # TypeScript cache
 *.tsbuildinfo
 
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
 # OS files
 .DS_Store
 Thumbs.db

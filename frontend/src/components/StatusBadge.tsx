@@ -42,16 +42,44 @@ export function StatusBadge({ status, size = 'small' }: StatusBadgeProps) {
           }}
         />
       );
+    case 'PREPARED':
     case 'COMPLETED':
       return (
         <Chip
           icon={<CheckCircleIcon sx={{ fontSize: '1rem !important', color: '#10B981 !important' }} />}
-          label="Completed"
+          label="Prepared"
           size={size}
           sx={{
             backgroundColor: 'rgba(16, 185, 129, 0.12)',
             color: '#34D399',
             border: '1px solid rgba(16, 185, 129, 0.3)',
+            fontWeight: 700,
+          }}
+        />
+      );
+    case 'PENDING':
+      return (
+        <Chip
+          icon={<AccessTimeIcon sx={{ fontSize: '1rem !important', color: '#F59E0B !important' }} />}
+          label="Pending"
+          size={size}
+          sx={{
+            backgroundColor: 'rgba(245, 158, 11, 0.12)',
+            color: '#FBBF24',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            fontWeight: 700,
+          }}
+        />
+      );
+    case 'CANCELLED':
+      return (
+        <Chip
+          label="Cancelled"
+          size={size}
+          sx={{
+            backgroundColor: 'rgba(239, 68, 68, 0.12)',
+            color: '#F87171',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
             fontWeight: 700,
           }}
         />

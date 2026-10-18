@@ -10,6 +10,8 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:3001'),
   LOG_LEVEL: z.string().default('info'),
+  JWT_SECRET: z.string().default('storepulse-super-secret-jwt-key-2026'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
 });
 
 const parsed = envSchema.safeParse(process.env);

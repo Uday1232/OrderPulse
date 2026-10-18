@@ -31,9 +31,9 @@ export function StatusTransitionMenu({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleQuickTransition = async () => {
-    let nextStatus: OrderStatus = 'COMPLETED';
-    if (currentStatus === 'PLACED') nextStatus = 'PREPARING';
-    else if (currentStatus === 'PREPARING') nextStatus = 'COMPLETED';
+    let nextStatus: OrderStatus = 'PREPARED';
+    if (currentStatus === 'PLACED' || currentStatus === 'PENDING') nextStatus = 'PREPARED';
+    else if (currentStatus === 'PREPARED' || currentStatus === 'COMPLETED') return;
     else return;
 
     setLoading(true);
@@ -56,7 +56,7 @@ export function StatusTransitionMenu({
     }
   };
 
-  const isCompleted = currentStatus === 'COMPLETED';
+  const isCompleted = currentStatus === 'PREPARED' || currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED';
 
   return (
     <>
@@ -77,7 +77,7 @@ export function StatusTransitionMenu({
               <CircularProgress size={14} color="inherit" />
             ) : currentStatus === 'PLACED' ? (
               <PlayArrowIcon sx={{ fontSize: '1rem', color: '#60A5FA' }} />
-            ) : currentStatus === 'PREPARING' ? (
+            ) : currentStatus === 'PREPARED' ? (
               <CheckIcon sx={{ fontSize: '1rem', color: '#34D399' }} />
             ) : (
               <DoneAllIcon sx={{ fontSize: '1rem', color: '#9CA3AF' }} />
@@ -98,10 +98,10 @@ export function StatusTransitionMenu({
           {loading
             ? 'Updating...'
             : currentStatus === 'PLACED'
-            ? 'Start Preparing'
-            : currentStatus === 'PREPARING'
-            ? 'Mark Complete'
-            : 'Completed'}
+            ? 'Mark Prepared'
+            : currentStatus === 'PREPARED'
+            ? 'Prepared'
+            : currentStatus}
         </Button>
         <Button
           size="small"
@@ -135,24 +135,32 @@ export function StatusTransitionMenu({
           selected={currentStatus === 'PLACED'}
           sx={{ fontSize: '0.85rem' }}
         >
-          <ListItemIcon sx={{ minWidth: 28, color: '#F59E0B' }}>•</ListItemIcon>
+          <ListItemIcon sx={{ minWidth: 28, color: '#3B82F6' }}>•</ListItemIcon>
           <ListItemText primary="Set to Placed" />
         </MenuItem>
         <MenuItem
-          onClick={() => handleSelectStatus('PREPARING')}
-          selected={currentStatus === 'PREPARING'}
-          sx={{ fontSize: '0.85rem' }}
-        >
-          <ListItemIcon sx={{ minWidth: 28, color: '#3B82F6' }}>•</ListItemIcon>
-          <ListItemText primary="Set to Preparing" />
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleSelectStatus('COMPLETED')}
-          selected={currentStatus === 'COMPLETED'}
+          onClick={() => handleSelectStatus('PREPARED')}
+          selected={currentStatus === 'PREPARED'}
           sx={{ fontSize: '0.85rem' }}
         >
           <ListItemIcon sx={{ minWidth: 28, color: '#10B981' }}>•</ListItemIcon>
-          <ListItemText primary="Set to Completed" />
+          <ListItemText primary="Set to Prepared" />
+        </MenuItem>
+        <MenuItem
+          onClick={() => handleSelectStatus('PENDING')}
+          selected={currentStatus === 'PENDING'}
+          sx={{ fontSize: '0.85rem' }}
+        >
+          <ListItemIcon sx={{ minWidth: 28, color: '#F59E0B' }}>•</ListItemIcon>
+          <ListItemText primary="Set to Pending" />
+        </MenuItem>
+        <MenuItem
+          onClick={() => handleSelectStatus('CANCELLED')}
+          selected={currentStatus === 'CANCELLED'}
+          sx={{ fontSize: '0.85rem', color: '#EF4444' }}
+        >
+          <ListItemIcon sx={{ minWidth: 28, color: '#EF4444' }}>•</ListItemIcon>
+          <ListItemText primary="Set to Cancelled" />
         </MenuItem>
       </Menu>
     </>

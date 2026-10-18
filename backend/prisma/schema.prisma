@@ -7,36 +7,125 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 enum OrderStatus {
+  PENDING
   PLACED
-  PREPARING
+  PREPARED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+}
+
+enum PaymentStatus {
+  PENDING
   COMPLETED
+  FAILED
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  email         String   @unique
+  password_hash String   @map("password_hash")
+  role          Role     @default(USER)
+  created_at    DateTime @default(now()) @map("created_at")
+
+  stores        Store[]  @relation("AdminStores")
+  orders        Order[]
+
+  @@map("users")
+}
+
+model Store {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String
+  location   String
+  admin_id   String     @db.Uuid @map("admin_id")
+  admin      User       @relation("AdminStores", fields: [admin_id], references: [id], onDelete: Cascade)
+  created_at DateTime   @default(now()) @map("created_at")
+
+  categories Category[]
+  items      Item[]
+  orders     Order[]
+
+  @@index([admin_id])
+  @@map("stores")
+}
+
+model Category {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  store_id String @db.Uuid @map("store_id")
+  store    Store  @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  items    Item[]
+
+  @@index([store_id])
+  @@map("categories")
+}
+
+model Item {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String   @default("")
+  price       Float
+  image_url   String   @map("image_url")
+  rating      Float    @default(4.5)
+  category_id String   @db.Uuid @map("category_id")
+  category    Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  store_id    String   @db.Uuid @map("store_id")
+  store       Store    @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  created_at  DateTime @default(now()) @map("created_at")
+
+  @@index([store_id])
+  @@index([category_id])
+  @@map("items")
 }
 
 model Order {
-  id           String      @id @default(uuid()) @db.Uuid
-  store_id     String      @map("store_id")
-  items        Json        @map("items")
-  total_amount Float       @map("total_amount")
-  status       OrderStatus @default(PLACED)
-  created_at   DateTime    @default(now()) @map("created_at")
+  id             String        @id @default(uuid()) @db.Uuid
+  store_id       String        @db.Uuid @map("store_id")
+  store          Store         @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  user_id        String?       @db.Uuid @map("user_id")
+  user           User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  items          Json          @map("items")
+  total_amount   Float         @map("total_amount")
+  status         OrderStatus   @default(PENDING)
+  payment_method PaymentMethod @default(CASH) @map("payment_method")
+  payment_status PaymentStatus @default(PENDING) @map("payment_status")
+  created_at     DateTime      @default(now()) @map("created_at")
 
   @@index([store_id])
   @@index([created_at])
   @@index([store_id, created_at])
+  @@index([user_id])
   @@map("orders")
 }
 
 model OrderArchive {
-  id           String      @id @db.Uuid
-  store_id     String      @map("store_id")
-  items        Json        @map("items")
-  total_amount Float       @map("total_amount")
-  status       OrderStatus
-  created_at   DateTime    @map("created_at")
-  archived_at  DateTime    @default(now()) @map("archived_at")
+  id             String        @id @db.Uuid
+  store_id       String        @db.Uuid @map("store_id")
+  user_id        String?       @db.Uuid @map("user_id")
+  items          Json          @map("items")
+  total_amount   Float         @map("total_amount")
+  status         OrderStatus
+  payment_method PaymentMethod @default(CASH) @map("payment_method")
+  payment_status PaymentStatus @default(COMPLETED) @map("payment_status")
+  created_at     DateTime      @map("created_at")
+  archived_at    DateTime      @default(now()) @map("archived_at")
 
   @@index([store_id])
   @@index([created_at])
+  @@index([store_id, created_at])
+  @@index([user_id])
   @@map("orders_archive")
 }

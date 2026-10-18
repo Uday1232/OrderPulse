@@ -6,14 +6,14 @@ export const theme = createTheme({
   palette: {
     mode: 'dark',
     background: {
-      default: '#0B0F17',
-      paper: '#111827',
+      default: '#0D111A',
+      paper: '#151C2C',
     },
     primary: {
-      main: '#F59E0B', // Warm Amber Gold
-      light: '#FBBF24',
-      dark: '#D97706',
-      contrastText: '#000000',
+      main: '#FF7A00', // Reference POS Vibrant Orange
+      light: '#FFA040',
+      dark: '#E06500',
+      contrastText: '#FFFFFF',
     },
     secondary: {
       main: '#10B981', // Emerald Green
@@ -78,27 +78,28 @@ export const theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 10,
+    borderRadius: 12,
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 10,
           boxShadow: 'none',
           padding: '8px 18px',
+          textTransform: 'none',
           transition: 'all 0.2s ease-in-out',
           '&:hover': {
-            boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.35)',
+            boxShadow: '0 4px 14px 0 rgba(255, 122, 0, 0.25)',
             transform: 'translateY(-1px)',
           },
         },
         containedPrimary: {
-          backgroundColor: '#F59E0B',
-          color: '#111827',
+          backgroundColor: '#FF7A00',
+          color: '#FFFFFF',
           fontWeight: 700,
           '&:hover': {
-            backgroundColor: '#FBBF24',
+            backgroundColor: '#FFA040',
           },
         },
       },
@@ -106,9 +107,9 @@ export const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundColor: '#111827',
+          backgroundColor: '#151C2C',
           backgroundImage: 'none',
-          borderRadius: 12,
+          borderRadius: 16,
           border: '1px solid rgba(255, 255, 255, 0.08)',
           boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.5)',
         },
@@ -133,7 +134,7 @@ export const theme = createTheme({
           textTransform: 'uppercase',
           fontSize: '0.75rem',
           letterSpacing: '0.05em',
-          backgroundColor: '#0F172A',
+          backgroundColor: '#0F1626',
         },
       },
     },
@@ -141,15 +142,15 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           fontWeight: 600,
-          borderRadius: 6,
+          borderRadius: 8,
         },
       },
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(255, 255, 255, 0.02)',
-          borderRadius: 8,
+          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: 10,
           '& .MuiOutlinedInput-notchedOutline': {
             borderColor: 'rgba(255, 255, 255, 0.12)',
           },
@@ -157,7 +158,7 @@ export const theme = createTheme({
             borderColor: 'rgba(255, 255, 255, 0.25)',
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#F59E0B',
+            borderColor: '#FF7A00',
           },
         },
       },

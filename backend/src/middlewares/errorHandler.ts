@@ -34,6 +34,18 @@ export class ConflictError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Authentication required or invalid token') {
+    super(message, 401);
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message = 'Access forbidden: Insufficient permissions') {
+    super(message, 403);
+  }
+}
+
 export const notFoundHandler = (req: Request, _res: Response, next: NextFunction): void => {
   next(new NotFoundError(`Endpoint not found: ${req.method} ${req.originalUrl}`));
 };

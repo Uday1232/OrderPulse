@@ -1,20 +1,73 @@
-export type OrderStatus = 'PLACED' | 'PREPARING' | 'COMPLETED';
+export type Role = 'ADMIN' | 'USER';
+
+export type OrderStatus = 'PENDING' | 'PLACED' | 'PREPARED' | 'CANCELLED' | 'PREPARING' | 'COMPLETED';
+
+export type PaymentMethod = 'CASH' | 'CARD' | 'UPI';
+
+export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  created_at?: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  location: string;
+  admin_id?: string;
+  created_at?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  store_id: string;
+  items?: Item[];
+}
+
+export interface Item {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  image_url?: string | null;
+  rating?: number;
+  category_id: string;
+  store_id: string;
+  created_at?: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+}
 
 export interface OrderItem {
+  item_id?: string;
   name: string;
-  quantity: number;
-  unit_price: number;
-  subtotal: number;
+  qty: number;
+  quantity?: number;
+  price: number;
+  unit_price?: number;
+  subtotal?: number;
 }
 
 export interface Order {
   id: string;
   store_id: string;
+  user_id?: string | null;
   items: OrderItem[];
   total_amount: number;
   status: OrderStatus;
+  payment_method: PaymentMethod;
+  payment_status: PaymentStatus;
   created_at: string;
 }
+
+export interface OrderArchive extends Order {}
 
 export interface PaginatedOrdersResponse {
   success: boolean;
@@ -70,17 +123,16 @@ export interface StoreInfo {
 }
 
 export const AVAILABLE_STORES: StoreInfo[] = [
-  { id: 'store-downtown-01', name: 'Downtown Bistro', location: '101 Main St, Downtown' },
-  { id: 'store-uptown-02', name: 'Uptown Pizzeria', location: '404 High St, Uptown' },
-  { id: 'store-suburban-03', name: 'Suburban Grill', location: '707 Oak Ave, Suburbia' },
+  { id: 'central-store-01', name: 'Central Cafe & Bistro', location: '101 Main St, Downtown' },
+  { id: 'uptown-store-02', name: 'Uptown Pizzeria & Grill', location: '404 High St, Uptown' },
+  { id: 'suburban-store-03', name: 'Suburban Gourmet House', location: '707 Oak Ave, Suburbia' },
 ];
 
 export const POPULAR_MENU_PRESETS = [
-  { name: 'Margherita Pizza', unit_price: 14.99 },
-  { name: 'Truffle Burger', unit_price: 18.50 },
-  { name: 'Caesar Salad', unit_price: 11.00 },
-  { name: 'Pasta Carbonara', unit_price: 16.75 },
-  { name: 'Tiramisu', unit_price: 8.50 },
-  { name: 'Espresso', unit_price: 3.50 },
-  { name: 'Garlic Knots', unit_price: 6.00 },
+  { name: 'Veg. Mania Burger with lettuce', unit_price: 16.36 },
+  { name: 'Italian Veg. Sandwich Classic', unit_price: 16.54 },
+  { name: 'Turkish Cuisine Pizza', unit_price: 22.54 },
+  { name: 'Mexican Patty With Veg. Sammi', unit_price: 8.28 },
+  { name: 'Crispy French Fries Golden', unit_price: 6.99 },
+  { name: 'Artisan Hot-Coffee Latte', unit_price: 4.50 },
 ];

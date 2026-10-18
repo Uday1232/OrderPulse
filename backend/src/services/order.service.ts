@@ -1,4 +1,4 @@
-import { Order, OrderStatus } from '@prisma/client';
+import { Order, OrderStatus, PaymentStatus } from '@prisma/client';
 import { prisma } from '../config/db';
 import { RedisService } from './redis.service';
 import { emitOrderCreated, emitOrderUpdated } from '../socket/socket.server';
@@ -15,14 +15,21 @@ export interface PaginatedOrdersResponse {
 
 export class OrderService {
   /**
-   * Create a new order with atomic total calculation and real-time broadcasting
+   * Create a new order with calculated total_amount, payment handling, and real-time broadcasting
    */
   static async createOrder(input: CreateOrderInput): Promise<Order> {
-    // Calculate line-item subtotals and verify total_amount
+    // 1. Normalize line-items and calculate subtotal
     const normalizedItems = input.items.map((item) => {
-      const subtotal = Math.round(item.quantity * item.unit_price * 100) / 100;
+      const qty = item.qty || item.quantity || 1;
+      const price = item.price !== undefined ? item.price : (item.unit_price || 0);
+      const subtotal = Math.round(qty * price * 100) / 100;
       return {
-        ...item,
+        item_id: item.item_id || '',
+        name: item.name,
+        qty,
+        quantity: qty,
+        price,
+        unit_price: price,
         subtotal,
       };
     });
@@ -31,28 +38,49 @@ export class OrderService {
       normalizedItems.reduce((acc, curr) => acc + curr.subtotal, 0) * 100
     ) / 100;
 
+    // 2. Set payment_status: COMPLETED for simulated electronic payments (CARD, UPI) or PENDING for Cash on Delivery
+    let paymentStatus: PaymentStatus = 'PENDING';
+    if (input.payment_status) {
+      paymentStatus = input.payment_status;
+    } else if (input.payment_method === 'CARD' || input.payment_method === 'UPI') {
+      paymentStatus = 'COMPLETED';
+    }
+
+    const orderStatus: OrderStatus = input.status || (input.payment_method === 'CASH' ? 'PENDING' : 'PLACED');
+
+    // 3. Persist order in PostgreSQL
     const order = await prisma.order.create({
       data: {
         store_id: input.store_id,
+        user_id: input.user_id || null,
         items: normalizedItems,
         total_amount: totalAmount,
-        status: input.status || 'PLACED',
+        status: orderStatus,
+        payment_method: input.payment_method,
+        payment_status: paymentStatus,
+      },
+      include: {
+        store: { select: { id: true, name: true, location: true } },
+        user: { select: { id: true, name: true, email: true } },
       },
     });
 
-    logger.info(`Order created successfully: ${order.id} for store ${order.store_id}`, {
+    logger.info(`Order created: ${order.id} for store ${order.store_id}`, {
       orderId: order.id,
       storeId: order.store_id,
       totalAmount: order.total_amount,
+      status: order.status,
+      paymentMethod: order.payment_method,
+      paymentStatus: order.payment_status,
     });
 
-    // Invalidate Redis caches for this store and global analytics
+    // 4. Invalidate Redis caches
     await Promise.all([
       RedisService.invalidatePattern(`orders:${order.store_id}:*`),
       RedisService.invalidatePattern('analytics:*'),
     ]);
 
-    // Real-time broadcast to store room
+    // 5. Broadcast real-time Socket.IO event to store room
     emitOrderCreated(order.store_id, order);
 
     return order;
@@ -74,7 +102,7 @@ export class OrderService {
 
     logger.debug(`Cache MISS for orders query: ${cacheKey}`);
 
-    // 2. Build Prisma cursor-based query
+    // 2. Build Prisma query
     const whereClause: {
       store_id: string;
       status?: OrderStatus;
@@ -83,7 +111,7 @@ export class OrderService {
       ...(status ? { status } : {}),
     };
 
-    const takeCount = limit + 1; // Take one extra to determine nextCursor and hasMore
+    const takeCount = limit + 1; // Take one extra to determine nextCursor
 
     const orders = await prisma.order.findMany({
       where: whereClause,
@@ -94,6 +122,10 @@ export class OrderService {
             cursor: { id: cursor },
           }
         : {}),
+      include: {
+        store: { select: { id: true, name: true, location: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
       orderBy: [
         { created_at: 'desc' },
         { id: 'desc' },
@@ -118,13 +150,13 @@ export class OrderService {
   }
 
   /**
-   * Update order status with row-level locking (SELECT ... FOR UPDATE) to prevent concurrency anomalies
+   * Update order status with row-level locking (SELECT ... FOR UPDATE) to eliminate race conditions & deadlocks
    */
   static async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
     const updatedOrder = await prisma.$transaction(async (tx) => {
       // Execute raw query with row-level lock (FOR UPDATE)
       const lockedRows = await tx.$queryRaw<Order[]>`
-        SELECT id, store_id, items, total_amount, status, created_at
+        SELECT id, store_id, user_id, items, total_amount, status, payment_method, payment_status, created_at
         FROM "orders"
         WHERE "id" = ${orderId}::uuid
         FOR UPDATE
@@ -136,10 +168,19 @@ export class OrderService {
 
       const existingOrder = lockedRows[0]!;
 
-      // Update the status of the locked row
+      // Update status on locked record
       const updated = await tx.order.update({
         where: { id: existingOrder.id },
-        data: { status },
+        data: {
+          status,
+          ...(status === 'PREPARED' && existingOrder.payment_status === 'PENDING'
+            ? { payment_status: 'COMPLETED' }
+            : {}),
+        },
+        include: {
+          store: { select: { id: true, name: true, location: true } },
+          user: { select: { id: true, name: true, email: true } },
+        },
       });
 
       return updated;
@@ -151,14 +192,14 @@ export class OrderService {
       status: updatedOrder.status,
     });
 
-    // Invalidate Redis caches for this store and global analytics
+    // Invalidate Redis caches
     await Promise.all([
       RedisService.invalidatePattern(`orders:${updatedOrder.store_id}:*`),
       RedisService.invalidatePattern('analytics:*'),
     ]);
 
-    // Broadcast real-time update to store room
-    emitOrderUpdated(updatedOrder.store_id, updatedOrder);
+    // Broadcast real-time update to store room and user room
+    emitOrderUpdated(updatedOrder.store_id, updatedOrder, updatedOrder.user_id);
 
     return updatedOrder;
   }
@@ -169,6 +210,10 @@ export class OrderService {
   static async getOrderById(orderId: string): Promise<Order> {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
+      include: {
+        store: { select: { id: true, name: true, location: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
 
     if (!order) {
@@ -178,4 +223,3 @@ export class OrderService {
     return order;
   }
 }
-

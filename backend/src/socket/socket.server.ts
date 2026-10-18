@@ -4,13 +4,6 @@ import { logger } from '../utils/logger';
 
 let ioInstance: Server | null = null;
 
-export interface SocketEvents {
-  'join:store': (storeId: string) => void;
-  'leave:store': (storeId: string) => void;
-  'order:created': (order: unknown) => void;
-  'order:updated': (order: unknown) => void;
-}
-
 export function initializeSocketServer(httpServer: HttpServer, corsOrigins: string[]): Server {
   const io = new Server(httpServer, {
     cors: {
@@ -29,39 +22,50 @@ export function initializeSocketServer(httpServer: HttpServer, corsOrigins: stri
       query: socket.handshake.query,
     });
 
-    // Automatically join room if storeId is supplied in handshake query
+    // Automatically join store room if provided in query
     const initialStoreId = socket.handshake.query.store_id as string | undefined;
     if (initialStoreId) {
-      const room = `store:${initialStoreId}`;
-      socket.join(room);
-      logger.info(`Socket ${socket.id} joined initial room: ${room}`);
-      socket.emit('store:joined', { storeId: initialStoreId, room });
+      socket.join(`store_${initialStoreId}`);
+      socket.join(`store:${initialStoreId}`);
+      logger.info(`Socket ${socket.id} joined initial store room: store_${initialStoreId}`);
+    }
+
+    // Automatically join user room if user_id is provided in query
+    const initialUserId = socket.handshake.query.user_id as string | undefined;
+    if (initialUserId) {
+      socket.join(`user_${initialUserId}`);
+      logger.info(`Socket ${socket.id} joined user room: user_${initialUserId}`);
     }
 
     // Explicit store room join
     socket.on('join:store', (storeId: string) => {
       if (!storeId || typeof storeId !== 'string') return;
-      const room = `store:${storeId}`;
-      socket.join(room);
-      logger.info(`Socket ${socket.id} joined room: ${room}`);
-      socket.emit('store:joined', { storeId, room });
+      socket.join(`store_${storeId}`);
+      socket.join(`store:${storeId}`);
+      logger.info(`Socket ${socket.id} joined store room: store_${storeId}`);
+      socket.emit('store:joined', { storeId, room: `store_${storeId}` });
+    });
+
+    // Explicit user room join
+    socket.on('join:user', (userId: string) => {
+      if (!userId || typeof userId !== 'string') return;
+      socket.join(`user_${userId}`);
+      logger.info(`Socket ${socket.id} joined user room: user_${userId}`);
+      socket.emit('user:joined', { userId, room: `user_${userId}` });
     });
 
     // Leave store room
     socket.on('leave:store', (storeId: string) => {
       if (!storeId || typeof storeId !== 'string') return;
-      const room = `store:${storeId}`;
-      socket.leave(room);
-      logger.info(`Socket ${socket.id} left room: ${room}`);
-      socket.emit('store:left', { storeId, room });
+      socket.leave(`store_${storeId}`);
+      socket.leave(`store:${storeId}`);
+      logger.info(`Socket ${socket.id} left store room: store_${storeId}`);
     });
 
-    // Disconnect handling
     socket.on('disconnect', (reason) => {
       logger.info(`Socket client disconnected: ${socket.id}`, { reason });
     });
 
-    // Error handling
     socket.on('error', (err) => {
       logger.error(`Socket error on ${socket.id}:`, { error: err.message });
     });
@@ -80,18 +84,34 @@ export function getSocketServer(): Server {
 
 export function emitOrderCreated(storeId: string, order: unknown): void {
   if (!ioInstance) return;
-  const room = `store:${storeId}`;
-  ioInstance.to(room).emit('order:created', order);
-  logger.info(`Real-time event [order:created] emitted to room ${room}`, {
+  const storeRoom = `store_${storeId}`;
+  const legacyRoom = `store:${storeId}`;
+
+  // Emit both event names for maximum compatibility
+  ioInstance.to(storeRoom).to(legacyRoom).emit('new_order', order);
+  ioInstance.to(storeRoom).to(legacyRoom).emit('order:created', order);
+
+  logger.info(`Real-time event [new_order] emitted to room ${storeRoom}`, {
     orderId: (order as { id?: string })?.id,
   });
 }
 
-export function emitOrderUpdated(storeId: string, order: unknown): void {
+export function emitOrderUpdated(storeId: string, order: unknown, userId?: string | null): void {
   if (!ioInstance) return;
-  const room = `store:${storeId}`;
-  ioInstance.to(room).emit('order:updated', order);
-  logger.info(`Real-time event [order:updated] emitted to room ${room}`, {
-    orderId: (order as { id?: string })?.id,
-  });
+  const storeRoom = `store_${storeId}`;
+  const legacyRoom = `store:${storeId}`;
+
+  // Broadcast to store room
+  ioInstance.to(storeRoom).to(legacyRoom).emit('order_status_updated', order);
+  ioInstance.to(storeRoom).to(legacyRoom).emit('order:updated', order);
+
+  // If user_id exists, broadcast directly to user's private notification room
+  if (userId) {
+    const userRoom = `user_${userId}`;
+    ioInstance.to(userRoom).emit('order_status_updated', order);
+    ioInstance.to(userRoom).emit('order:updated', order);
+    logger.info(`Real-time event [order_status_updated] sent to user room ${userRoom}`);
+  }
+
+  logger.info(`Real-time event [order_status_updated] emitted for order ${((order as { id?: string })?.id)}`);
 }
