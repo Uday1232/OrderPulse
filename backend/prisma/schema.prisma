@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PLACED
+  PREPARING
+  COMPLETED
+}
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  store_id     String      @map("store_id")
+  items        Json        @map("items")
+  total_amount Float       @map("total_amount")
+  status       OrderStatus @default(PLACED)
+  created_at   DateTime    @default(now()) @map("created_at")
+
+  @@index([store_id])
+  @@index([created_at])
+  @@index([store_id, created_at])
+  @@map("orders")
+}
+
+model OrderArchive {
+  id           String      @id @db.Uuid
+  store_id     String      @map("store_id")
+  items        Json        @map("items")
+  total_amount Float       @map("total_amount")
+  status       OrderStatus
+  created_at   DateTime    @map("created_at")
+  archived_at  DateTime    @default(now()) @map("archived_at")
+
+  @@index([store_id])
+  @@index([created_at])
+  @@map("orders_archive")
+}

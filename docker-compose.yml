@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tmbill-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tmbill_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tmbill_password}
+      POSTGRES_DB: ${POSTGRES_DB:-tmbill_orders}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - tmbill_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tmbill_user} -d ${POSTGRES_DB:-tmbill_orders}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tmbill-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tmbill-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - tmbill_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tmbill-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tmbill-backend
+    restart: always
+    environment:
+      PORT: 5001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tmbill_user}:${POSTGRES_PASSWORD:-tmbill_password}@postgres:5432/${POSTGRES_DB:-tmbill_orders}?schema=public
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      LOG_LEVEL: info
+    ports:
+      - "${BACKEND_PORT:-5001}:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tmbill-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tmbill-frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-5001}
+      NEXT_PUBLIC_WS_URL: http://localhost:${BACKEND_PORT:-5001}
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    depends_on:
+      - backend
+    networks:
+      - tmbill-network
+
+volumes:
+  tmbill_postgres_data:
+  tmbill_redis_data:
+
+networks:
+  tmbill-network:
+    driver: bridge

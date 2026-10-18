@@ -1,0 +1,28 @@
+{
+  "name": "restaurant-order-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-store Restaurant Order Management System with real-time features and analytics",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "cd backend && npm run test",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
+  },
+  "keywords": [
+    "restaurant",
+    "order-management",
+    "real-time",
+    "prisma",
+    "socketio",
+    "redis",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}
