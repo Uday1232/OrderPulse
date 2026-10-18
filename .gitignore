@@ -1,0 +1,77 @@
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+*/node_modules/
+.pnp
+.pnp.js
+
+# ==========================================
+# Environment & Secrets (Keep .env.example)
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!*.env.example
+!.env.example
+backend/.env
+frontend/.env.local
+
+# ==========================================
+# Build & Compilation Outputs
+# ==========================================
+dist/
+backend/dist/
+build/
+.next/
+frontend/.next/
+out/
+frontend/out/
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# ==========================================
+# Logs & Runtime
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==========================================
+# Testing & Coverage
+# ==========================================
+coverage/
+backend/coverage/
+.nyc_output/
+
+# ==========================================
+# Operating System & Editor Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# ==========================================
+# Docker & Temporary Data
+# ==========================================
+.docker/
+docker-data/
+*.pid
+*.seed
