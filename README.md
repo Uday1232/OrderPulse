@@ -65,6 +65,20 @@ docker compose down
 
 ---
 
+## 🔑 Demo Logins & Role-Based Access Control (RBAC)
+
+The system features end-to-end JWT authentication and authorization with 3 distinct access levels:
+
+| Role | Email | Password | Capabilities & Access |
+| :--- | :--- | :--- | :--- |
+| **👑 SuperAdmin** | `admin@storepulse.com` | `admin123` | **Full Platform Access**: Live analytics across all 4 stores, store creation/deletion, menu editing, staff & store admin creation, 30-day order archival, and live POS terminal. |
+| **🛡️ Store Admin** | `central_admin@storepulse.com` | `admin123` | **Store Management**: Manage assigned store menu items, categories, view live incoming orders, and execute row-locked status updates (`PLACED` → `PREPARED`). |
+| **👤 Customer** | `user@storepulse.com` | `user123` | **Customer Ordering**: Interactive POS ordering, promotional coupon application, cart discounts, and real-time private order tracking alerts. |
+
+> **💡 One-Click Demo Sign-in:** On the login page (`http://localhost:3001/login`), click the quick-fill chips (**👑 SuperAdmin**, **🛡️ Admin**, or **👤 Customer**) to populate the credentials and test immediately with one click.
+
+---
+
 ## 💻 Local Development Setup
 
 If running services directly on your host machine:
@@ -89,7 +103,7 @@ npm install
 # Push schema to PostgreSQL
 npx prisma db push
 
-# (Optional) Seed realistic demo orders and stores
+# Seed 4 stores, 24 menu items (with matched photos), and 7-day analytics orders
 npm run prisma:seed
 
 # Run Jest test suite (25 tests covering validation, concurrency, and endpoints)

@@ -28,6 +28,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStores } from '../../hooks/useStores';
+import { NotificationPopover } from '../NotificationPopover';
 
 interface PosHeaderProps {
   searchValue: string;
@@ -113,18 +114,39 @@ export function PosHeader({
               fontWeight: 600,
               fontSize: '0.875rem',
               '& fieldset': { borderColor: '#E2E8F0' },
+              '& .MuiSelect-select': { color: '#0F172A !important' },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  backgroundColor: '#FFFFFF',
+                  color: '#0F172A',
+                },
+              },
             }}
           >
-            {stores.map((s) => (
-              <MenuItem key={s.id} value={s.id}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <StorefrontIcon sx={{ fontSize: 18, color: '#FF7A00' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#0F172A' }}>
-                    {s.name}
-                  </Typography>
-                </Box>
-              </MenuItem>
-            ))}
+            {stores.map((s) => {
+              const isActive = s.is_active !== false;
+              return (
+                <MenuItem key={s.id} value={s.id} disabled={!isActive && !isAdmin}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <StorefrontIcon sx={{ fontSize: 18, color: isActive ? '#FF7A00' : '#94A3B8' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: isActive ? '#0F172A' : '#94A3B8' }}>
+                        {s.name}
+                      </Typography>
+                    </Box>
+                    {!isActive && (
+                      <Chip
+                        label="Inactive"
+                        size="small"
+                        sx={{ fontSize: '0.65rem', height: 18, backgroundColor: '#F1F5F9', color: '#64748B' }}
+                      />
+                    )}
+                  </Box>
+                </MenuItem>
+              );
+            })}
           </Select>
         </FormControl>
 
@@ -159,33 +181,8 @@ export function PosHeader({
           </IconButton>
         </Tooltip>
 
-        {/* Notification Bell Badge */}
-        <IconButton
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: '12px',
-            backgroundColor: '#F8FAFC',
-            border: '1px solid #E2E8F0',
-            color: '#1E293B',
-            '&:hover': { backgroundColor: '#F1F5F9' },
-          }}
-        >
-          <Badge
-            badgeContent={1}
-            color="error"
-            sx={{
-              '& .MuiBadge-badge': {
-                backgroundColor: '#EF4444',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                fontSize: '0.75rem',
-              },
-            }}
-          >
-            <NotificationsNoneOutlinedIcon sx={{ fontSize: 22 }} />
-          </Badge>
-        </IconButton>
+        {/* Notification Bell Popover */}
+        <NotificationPopover />
 
         {/* Best Offer Deals Button */}
         <Button

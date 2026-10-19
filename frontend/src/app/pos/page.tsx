@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Box, Typography, Grid, CircularProgress, Alert, Snackbar } from '@mui/material';
+import { Box, Typography, Grid, CircularProgress, Alert, Snackbar, Button } from '@mui/material';
 
 import { PosSidebar } from '../../components/pos/PosSidebar';
 import { PosHeader } from '../../components/pos/PosHeader';
 import { PosItemCard } from '../../components/pos/PosItemCard';
 import { PosDetailPanel } from '../../components/pos/PosDetailPanel';
 import { PosCheckoutModal } from '../../components/pos/PosCheckoutModal';
+import { PosDealsModal } from '../../components/pos/PosDealsModal';
 
 import { useOrderSocket } from '../../context/SocketContext';
 import { useMenu } from '../../hooks/useMenu';
@@ -16,7 +17,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { Item } from '../../types/order';
 
 export default function PosPage() {
-  const { currentStoreId, setCurrentStoreId } = useOrderSocket();
+  const { currentStoreId, setCurrentStoreId, activePreparedOrder, dismissPreparedOrder } = useOrderSocket();
   const { allItems, isLoading, isError, error } = useMenu(currentStoreId);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -105,6 +106,72 @@ export default function PosPage() {
 
         {/* Content Body */}
         <Box sx={{ p: 3, flex: 1, overflowY: 'auto' }}>
+          {/* Order Prepared Alert Banner for Customer */}
+          {activePreparedOrder && (
+            <Box
+              sx={{
+                mb: 3,
+                p: 2.5,
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                color: '#FFFFFF',
+                boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+                animation: 'pulse 2s infinite ease-in-out',
+                '@keyframes pulse': {
+                  '0%': { transform: 'scale(1)' },
+                  '50%': { transform: 'scale(1.006)' },
+                  '100%': { transform: 'scale(1)' },
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                  }}
+                >
+                  🍽️
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>
+                    Your Order #{activePreparedOrder.id.slice(0, 8)} is PREPARED & Ready!
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontSize: '0.85rem' }}>
+                    Kitchen has finished your meal! Please head to the pickup counter to collect your fresh order (${Number(activePreparedOrder.total_amount || 0).toFixed(2)}).
+                  </Typography>
+                </Box>
+              </Box>
+              <Button
+                variant="contained"
+                onClick={dismissPreparedOrder}
+                sx={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#065F46',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  px: 2.5,
+                  '&:hover': { backgroundColor: '#F0FDF4' },
+                }}
+              >
+                Got It, Thanks!
+              </Button>
+            </Box>
+          )}
+
           {/* Menu Count Banner */}
           <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 2.5 }}>
             <Typography
@@ -172,13 +239,10 @@ export default function PosPage() {
         storeId={currentStoreId}
       />
 
-      {/* Best Offer Deals Notification */}
-      <Snackbar
+      {/* 5. Best Offer Deals Modal (Managed by Admin) */}
+      <PosDealsModal
         open={dealAlertOpen}
-        autoHideDuration={4000}
         onClose={() => setDealAlertOpen(false)}
-        message="🔥 Special Deal Activated: Get 20% off all artisanal sandwiches and combo pizzas today!"
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
   );

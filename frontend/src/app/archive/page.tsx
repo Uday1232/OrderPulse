@@ -21,34 +21,39 @@ import {
 import ArchiveIcon from '@mui/icons-material/Archive';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
+import { AdminGuard } from '../../components/auth/AdminGuard';
 import { ApiService } from '../../services/api';
 
 export default function ArchiveOrdersPage() {
   const queryClient = useQueryClient();
   const [archivedResult, setArchivedResult] = useState<{ count: number } | null>(null);
 
+  // Fetch real archivable orders older than 30 days
+  const { data: archivableData, isLoading } = useQuery({
+    queryKey: ['archivable-orders'],
+    queryFn: () => ApiService.getArchivableOrders(30),
+  });
+
+  const archivableOrders = archivableData?.data || [];
+
   // Archive mutation
   const archiveMutation = useMutation({
     mutationFn: () => ApiService.archiveOldOrders(30),
     onSuccess: (res) => {
       setArchivedResult({ count: res.data.archivedCount });
+      queryClient.invalidateQueries({ queryKey: ['archivable-orders'] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 
-  const DEMO_ARCHIVABLE = [
-    { id: '1006-a82f', store: 'Central Store', date: '01 Aug 2026', total: 450.0 },
-    { id: '1003-b93e', store: 'North Store', date: '18 Aug 2026', total: 300.0 },
-    { id: '1002-c74d', store: 'South Store', date: '05 Sep 2026', total: 250.0 },
-  ];
-
   return (
-    <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
-      <AdminSidebar />
+    <AdminGuard>
+      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+        <AdminSidebar />
 
       <Box sx={{ flex: 1, p: 4, overflowY: 'auto' }}>
         {/* Top Header */}
@@ -61,7 +66,7 @@ export default function ArchiveOrdersPage() {
           </Typography>
         </Box>
 
-        {/* Informational Alert Box matching Image 2 Screen 9 */}
+        {/* Informational Alert Box */}
         <Alert
           icon={<InfoOutlinedIcon sx={{ color: '#3B82F6' }} />}
           sx={{
@@ -94,18 +99,18 @@ export default function ArchiveOrdersPage() {
               Orders to Archive
             </Typography>
             <Chip
-              label="Orders older than 30 days: 3 found"
+              label={`Orders older than 30 days: ${archivableOrders.length} found`}
               size="small"
               sx={{
-                backgroundColor: '#EFF6FF',
-                color: '#2563EB',
+                backgroundColor: archivableOrders.length > 0 ? '#EFF6FF' : '#F1F5F9',
+                color: archivableOrders.length > 0 ? '#2563EB' : '#64748B',
                 fontWeight: 700,
                 borderRadius: '8px',
               }}
             />
           </Box>
 
-          <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #F1F5F9' }}>
+          <TableContainer component={Paper} sx={{ borderRadius: '14px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: 'none', overflow: 'hidden' }}>
             <Table>
               <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                 <TableRow>
@@ -117,17 +122,38 @@ export default function ArchiveOrdersPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {DEMO_ARCHIVABLE.map((item, idx) => (
-                  <TableRow key={item.id} hover>
-                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#0F172A' }}>#{item.id}</TableCell>
-                    <TableCell sx={{ color: '#334155' }}>{item.store}</TableCell>
-                    <TableCell sx={{ color: '#64748B', fontSize: '0.85rem' }}>{item.date}</TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#0F172A', textAlign: 'right' }}>
-                      ${item.total.toFixed(2)}
+                {isLoading ? (
+                  <TableRow sx={{ backgroundColor: '#FFFFFF' }}>
+                    <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4, backgroundColor: '#FFFFFF' }}>
+                      <CircularProgress size={24} sx={{ color: '#3B82F6' }} />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : archivableOrders.length === 0 ? (
+                  <TableRow sx={{ backgroundColor: '#FFFFFF' }}>
+                    <TableCell colSpan={5} sx={{ textAlign: 'center', py: 6, backgroundColor: '#FFFFFF' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#0F172A', mb: 0.5 }}>
+                        No orders older than 30 days found
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#64748B' }}>
+                        All current active orders are within the standard 30-day window.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  archivableOrders.map((item, idx) => (
+                    <TableRow key={item.id} sx={{ backgroundColor: '#FFFFFF', '&:hover': { backgroundColor: '#F8FAFC' } }}>
+                      <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#0F172A' }}>#{item.id.slice(0, 8)}</TableCell>
+                      <TableCell sx={{ color: '#0F172A', fontWeight: 600 }}>{item.store?.name || 'Store Location'}</TableCell>
+                      <TableCell sx={{ color: '#64748B', fontSize: '0.85rem' }}>
+                        {new Date(item.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 800, color: '#0F172A', textAlign: 'right' }}>
+                        ${Number(item.total_amount).toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -136,26 +162,32 @@ export default function ArchiveOrdersPage() {
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 3 }}>
             <Button
               onClick={() => archiveMutation.mutate()}
-              disabled={archiveMutation.isPending}
+              disabled={archiveMutation.isPending || archivableOrders.length === 0}
               variant="contained"
               startIcon={<ArchiveIcon />}
               sx={{
-                backgroundColor: '#DC2626',
-                color: '#FFFFFF',
+                backgroundColor: archivableOrders.length === 0 ? '#CBD5E1' : '#DC2626',
+                color: archivableOrders.length === 0 ? '#64748B' : '#FFFFFF',
                 fontWeight: 700,
                 fontSize: '0.9rem',
                 borderRadius: '12px',
                 px: 3,
                 py: 1.2,
-                boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)',
-                '&:hover': { backgroundColor: '#B91C1C' },
+                boxShadow: archivableOrders.length === 0 ? 'none' : '0 4px 14px rgba(220, 38, 38, 0.35)',
+                '&:hover': { backgroundColor: archivableOrders.length === 0 ? '#CBD5E1' : '#B91C1C' },
               }}
             >
-              {archiveMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Archive 3 Orders'}
+              {archiveMutation.isPending ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                `Archive ${archivableOrders.length} Orders`
+              )}
             </Button>
           </Box>
         </Card>
       </Box>
     </Box>
+    </AdminGuard>
   );
 }
+

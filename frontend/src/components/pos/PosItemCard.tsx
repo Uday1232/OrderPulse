@@ -6,6 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { Item } from '../../types/order';
 import { useCartStore } from '../../store/useCartStore';
+import { getMediaUrl } from '../../utils/imageUrl';
 
 interface PosItemCardProps {
   item: Item;
@@ -67,7 +68,7 @@ export function PosItemCard({ item, isSelected, onInspect }: PosItemCardProps) {
       >
         <Box
           component="img"
-          src={item.image_url || '/images/food/burger.jpg'}
+          src={getMediaUrl(item.image_url, '/images/food/burger.jpg')}
           alt={item.name}
           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
             e.currentTarget.src = '/images/food/burger.jpg';

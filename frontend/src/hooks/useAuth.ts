@@ -22,7 +22,7 @@ export function useAuth() {
     name: string;
     email: string;
     password: string;
-    role?: 'ADMIN' | 'USER';
+    role?: 'SUPERADMIN' | 'ADMIN' | 'USER';
   }) => {
     const res = await ApiService.register(data);
     setAuth(res.data.token, res.data.user);

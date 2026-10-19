@@ -135,12 +135,17 @@ export default function OrderDetailsPage() {
                 disabled={updateMutation.isPending || selectedStatus === order.status}
                 sx={{
                   backgroundColor: '#0F172A',
-                  color: '#FFFFFF',
+                  color: '#FFFFFF !important',
                   fontWeight: 700,
                   borderRadius: '12px',
                   px: 3,
                   py: 1.1,
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
                   '&:hover': { backgroundColor: '#1E293B' },
+                  '&.Mui-disabled': {
+                    backgroundColor: '#E2E8F0 !important',
+                    color: '#94A3B8 !important',
+                  },
                 }}
               >
                 {updateMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Update Status'}
@@ -151,7 +156,7 @@ export default function OrderDetailsPage() {
             <Grid container spacing={3} sx={{ mb: 3.5 }}>
               {/* Order Info Card */}
               <Grid item xs={12} md={5}>
-                <Card sx={{ p: 3, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', height: '100%' }}>
+                <Card sx={{ p: 3, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', height: '100%', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', mb: 2.5 }}>
                     Order Information
                   </Typography>
@@ -175,11 +180,20 @@ export default function OrderDetailsPage() {
                       </Typography>
                     </Box>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ color: '#64748B' }}>
                         Payment Method
                       </Typography>
-                      <Chip label={order.payment_method || 'CASH'} size="small" sx={{ fontWeight: 700 }} />
+                      <Chip
+                        label={order.payment_method || 'CASH'}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          backgroundColor: '#F1F5F9',
+                          color: '#334155',
+                          border: '1px solid #E2E8F0',
+                        }}
+                      />
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -220,28 +234,62 @@ export default function OrderDetailsPage() {
 
               {/* Order Items Table Card */}
               <Grid item xs={12} md={7}>
-                <Card sx={{ p: 3, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', height: '100%' }}>
+                <Card sx={{ p: 3, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', height: '100%', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', mb: 2 }}>
                     Order Items
                   </Typography>
 
-                  <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #F1F5F9' }}>
+                  <TableContainer sx={{ backgroundColor: '#FFFFFF !important', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: 'none' }}>
                     <Table size="small">
-                      <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700, color: '#64748B' }}>Item</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#64748B' }}>Qty</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#64748B' }}>Unit Price</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#64748B', textAlign: 'right' }}>Total</TableCell>
+                      <TableHead sx={{ backgroundColor: '#F8FAFC !important' }}>
+                        <TableRow sx={{ backgroundColor: '#F8FAFC !important' }}>
+                          <TableCell sx={{ fontWeight: 800, color: '#475569 !important', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: '#F8FAFC !important', borderBottom: '1px solid #E2E8F0', py: 1.5 }}>
+                            ITEM
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#475569 !important', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: '#F8FAFC !important', borderBottom: '1px solid #E2E8F0', py: 1.5 }}>
+                            QTY
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#475569 !important', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: '#F8FAFC !important', borderBottom: '1px solid #E2E8F0', py: 1.5 }}>
+                            UNIT PRICE
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#475569 !important', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', backgroundColor: '#F8FAFC !important', borderBottom: '1px solid #E2E8F0', py: 1.5 }}>
+                            TOTAL
+                          </TableCell>
                         </TableRow>
                       </TableHead>
-                      <TableBody>
+                      <TableBody sx={{ backgroundColor: '#FFFFFF !important' }}>
                         {order.items.map((item, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell sx={{ fontWeight: 600, color: '#0F172A' }}>{item.name}</TableCell>
-                            <TableCell sx={{ color: '#334155' }}>{item.qty || item.quantity || 1}</TableCell>
-                            <TableCell sx={{ color: '#334155' }}>${Number(item.price || item.unit_price || 0).toFixed(2)}</TableCell>
-                            <TableCell sx={{ fontWeight: 700, color: '#0F172A', textAlign: 'right' }}>
+                          <TableRow
+                            key={idx}
+                            sx={{
+                              backgroundColor: '#FFFFFF !important',
+                              '&:hover': { backgroundColor: '#F8FAFC !important' },
+                              transition: 'background-color 0.15s ease',
+                            }}
+                          >
+                            <TableCell sx={{ py: 1.75, borderBottom: '1px solid #F1F5F9 !important', backgroundColor: 'transparent !important' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A !important' }}>
+                                {item.name}
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ py: 1.75, borderBottom: '1px solid #F1F5F9 !important', backgroundColor: 'transparent !important' }}>
+                              <Chip
+                                label={`×${item.qty || item.quantity || 1}`}
+                                size="small"
+                                sx={{
+                                  fontWeight: 700,
+                                  fontSize: '0.75rem',
+                                  backgroundColor: '#F1F5F9 !important',
+                                  color: '#1E293B !important',
+                                  borderRadius: '6px',
+                                  height: '24px',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, color: '#334155 !important', py: 1.75, borderBottom: '1px solid #F1F5F9 !important', backgroundColor: 'transparent !important' }}>
+                              ${Number(item.price || item.unit_price || 0).toFixed(2)}
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 800, color: '#0F172A !important', textAlign: 'right', py: 1.75, borderBottom: '1px solid #F1F5F9 !important', backgroundColor: 'transparent !important' }}>
                               ${Number((item.price || item.unit_price || 0) * (item.qty || item.quantity || 1)).toFixed(2)}
                             </TableCell>
                           </TableRow>
@@ -252,7 +300,7 @@ export default function OrderDetailsPage() {
 
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2.5 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A' }}>
-                      Total: <span style={{ color: '#FF7A00' }}>${Number(order.total_amount).toFixed(2)}</span>
+                      Total: <span style={{ color: '#FF7A00', fontWeight: 900, fontSize: '1.25rem' }}>${Number(order.total_amount).toFixed(2)}</span>
                     </Typography>
                   </Box>
                 </Card>
@@ -331,36 +379,49 @@ export default function OrderDetailsPage() {
               </Box>
 
               {/* Status Radio Choices */}
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, flexWrap: 'wrap' }}>
-                <Button
-                  onClick={() => setSelectedStatus('PLACED')}
-                  variant={selectedStatus === 'PLACED' ? 'contained' : 'outlined'}
-                  sx={{ borderRadius: '10px' }}
-                >
-                  PLACED
-                </Button>
-                <Button
-                  onClick={() => setSelectedStatus('PENDING')}
-                  variant={selectedStatus === 'PENDING' ? 'contained' : 'outlined'}
-                  sx={{ borderRadius: '10px' }}
-                >
-                  PENDING
-                </Button>
-                <Button
-                  onClick={() => setSelectedStatus('PREPARED')}
-                  variant={selectedStatus === 'PREPARED' ? 'contained' : 'outlined'}
-                  sx={{ borderRadius: '10px' }}
-                >
-                  PREPARED
-                </Button>
-                <Button
-                  onClick={() => setSelectedStatus('CANCELLED')}
-                  variant={selectedStatus === 'CANCELLED' ? 'contained' : 'outlined'}
-                  color="error"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  CANCELLED
-                </Button>
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2.5, flexWrap: 'wrap' }}>
+                {(['PLACED', 'PENDING', 'PREPARED', 'CANCELLED'] as const).map((status) => {
+                  const isSelected = selectedStatus === status;
+                  const isCancel = status === 'CANCELLED';
+                  return (
+                    <Button
+                      key={status}
+                      onClick={() => setSelectedStatus(status)}
+                      variant={isSelected ? 'contained' : 'outlined'}
+                      sx={{
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        px: 3,
+                        py: 1,
+                        fontSize: '0.88rem',
+                        transition: 'all 0.2s',
+                        ...(isSelected
+                          ? {
+                              backgroundColor: isCancel ? '#EF4444' : '#FF7A00',
+                              color: '#FFFFFF !important',
+                              boxShadow: isCancel
+                                ? '0 4px 14px rgba(239, 68, 68, 0.3)'
+                                : '0 4px 14px rgba(255, 122, 0, 0.3)',
+                              '&:hover': {
+                                backgroundColor: isCancel ? '#DC2626' : '#E06500',
+                              },
+                            }
+                          : {
+                              backgroundColor: '#FFFFFF !important',
+                              color: isCancel ? '#EF4444 !important' : '#334155 !important',
+                              borderColor: isCancel ? '#FCA5A5 !important' : '#CBD5E1 !important',
+                              borderWidth: '1.5px',
+                              '&:hover': {
+                                backgroundColor: isCancel ? '#FEF2F2 !important' : '#F8FAFC !important',
+                                borderColor: isCancel ? '#EF4444 !important' : '#94A3B8 !important',
+                              },
+                            }),
+                      }}
+                    >
+                      {status}
+                    </Button>
+                  );
+                })}
               </Box>
             </Card>
           </Box>

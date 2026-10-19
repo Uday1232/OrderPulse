@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       token,
       isAuthenticated: true,
-      isAdmin: user.role === 'ADMIN',
+      isAdmin: user.role === 'ADMIN' || user.role === 'SUPERADMIN',
       isLoading: false,
     });
   },
@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           token: storedToken,
           user,
           isAuthenticated: true,
-          isAdmin: user.role === 'ADMIN',
+          isAdmin: user.role === 'ADMIN' || user.role === 'SUPERADMIN',
           isLoading: false,
         });
         return;

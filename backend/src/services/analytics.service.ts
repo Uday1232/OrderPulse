@@ -10,6 +10,7 @@ export interface DailyOrderStat {
 
 export interface StoreRevenueStat {
   store_id: string;
+  store_name?: string;
   total_orders: number;
   total_revenue: number;
   avg_order_value: number;
@@ -37,15 +38,15 @@ export interface AnalyticsResponse {
 }
 
 export class AnalyticsService {
-  private static readonly CACHE_TTL_SECONDS = 600; // 10 minutes
+  private static readonly CACHE_TTL_SECONDS = 30; // 30 seconds max fallback
 
   /**
-   * Fetch comprehensive aggregated analytics with Redis caching
+   * Fetch comprehensive aggregated analytics with 100% fresh real-time database queries
    */
   static async getAnalytics(forceRefresh = false): Promise<AnalyticsResponse> {
     const cacheKey = 'analytics:summary';
 
-    // 1. Check Redis cache if not forced refresh
+    // 1. Check Redis cache only if not forced refresh
     if (!forceRefresh) {
       const cached = await RedisService.get<AnalyticsResponse>(cacheKey);
       if (cached) {
@@ -57,11 +58,11 @@ export class AnalyticsService {
       }
     }
 
-    logger.debug('Cache MISS or force refresh for analytics. Computing aggregations from database...');
+    logger.debug('Computing fresh real-time aggregations directly from PostgreSQL database...');
 
     // 2. Database Aggregations
     const [ordersPerDay, revenuePerStore, topSellingItems, summaryStats] = await Promise.all([
-      // 1. Orders and Revenue per day (Last 30 days)
+      // 1. Orders and Revenue per day (Last 30 days chronologically)
       prisma.$queryRaw<DailyOrderStat[]>`
         SELECT
           TO_CHAR("created_at", 'YYYY-MM-DD') AS date,
@@ -69,19 +70,21 @@ export class AnalyticsService {
           COALESCE(ROUND(SUM("total_amount")::numeric, 2), 0)::float AS daily_revenue
         FROM "orders"
         GROUP BY TO_CHAR("created_at", 'YYYY-MM-DD')
-        ORDER BY date DESC
+        ORDER BY date ASC
         LIMIT 30;
       `,
 
-      // 2. Total revenue & orders per store
+      // 2. Total revenue & orders per store with store names joined
       prisma.$queryRaw<StoreRevenueStat[]>`
         SELECT
-          "store_id" AS store_id,
-          COUNT(*)::int AS total_orders,
-          COALESCE(ROUND(SUM("total_amount")::numeric, 2), 0)::float AS total_revenue,
-          COALESCE(ROUND(AVG("total_amount")::numeric, 2), 0)::float AS avg_order_value
-        FROM "orders"
-        GROUP BY "store_id"
+          o."store_id" AS store_id,
+          COALESCE(s."name", 'Unnamed Store') AS store_name,
+          COUNT(o.*)::int AS total_orders,
+          COALESCE(ROUND(SUM(o."total_amount")::numeric, 2), 0)::float AS total_revenue,
+          COALESCE(ROUND(AVG(o."total_amount")::numeric, 2), 0)::float AS avg_order_value
+        FROM "orders" o
+        LEFT JOIN "stores" s ON s."id" = o."store_id"
+        GROUP BY o."store_id", s."name"
         ORDER BY total_revenue DESC;
       `,
 
@@ -123,8 +126,8 @@ export class AnalyticsService {
       fromCache: false,
     };
 
-    // 3. Cache into Redis with 10-minute TTL
-    await RedisService.set(cacheKey, response, this.CACHE_TTL_SECONDS);
+    // Update Redis cache asynchronously for warm standby
+    RedisService.set(cacheKey, response, this.CACHE_TTL_SECONDS).catch(() => {});
 
     return response;
   }

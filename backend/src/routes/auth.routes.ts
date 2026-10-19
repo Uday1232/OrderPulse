@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { validateRequest } from '../middlewares/validate';
-import { authenticate } from '../middlewares/auth';
-import { RegisterSchema, LoginSchema } from '../validators/auth.schema';
+import { authenticate, authorizeRoles } from '../middlewares/auth';
+import { RegisterSchema, LoginSchema, UpdateUserRoleSchema, CreateAdminSchema } from '../validators/auth.schema';
 
 const router = Router();
 
@@ -25,6 +25,32 @@ router.get(
   '/me',
   authenticate,
   AuthController.me
+);
+
+// POST /auth/admins - Create a new Store Admin with auto-generated credentials (Admin / Superadmin only)
+router.post(
+  '/admins',
+  authenticate,
+  authorizeRoles('ADMIN'),
+  validateRequest({ body: CreateAdminSchema }),
+  AuthController.createAdmin
+);
+
+// GET /auth/users - List all registered users (Admin / Superadmin only)
+router.get(
+  '/users',
+  authenticate,
+  authorizeRoles('ADMIN'),
+  AuthController.getAllUsers
+);
+
+// PATCH /auth/users/:id/role - Promote/Demote user role (Admin / Superadmin only)
+router.patch(
+  '/users/:id/role',
+  authenticate,
+  authorizeRoles('ADMIN'),
+  validateRequest({ body: UpdateUserRoleSchema }),
+  AuthController.updateUserRole
 );
 
 export default router;

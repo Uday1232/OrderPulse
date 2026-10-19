@@ -5,6 +5,9 @@ import { ArchiveOrdersSchema } from '../validators/order.schema';
 
 const router = Router();
 
+// GET /archive-old-orders - Fetch orders older than threshold days
+router.get('/', ArchiveController.getArchivableOrders);
+
 // POST /archive-old-orders - Move orders older than 30 days to orders_archive
 router.post(
   '/',

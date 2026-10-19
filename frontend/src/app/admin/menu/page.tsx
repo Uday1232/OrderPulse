@@ -27,6 +27,8 @@ import {
   FormControl,
   InputLabel,
   InputAdornment,
+  Switch,
+  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -34,9 +36,12 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 import { AdminSidebar } from '../../../components/admin/AdminSidebar';
+import { AdminGuard } from '../../../components/auth/AdminGuard';
 import { useStores } from '../../../hooks/useStores';
 import { useMenu } from '../../../hooks/useMenu';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { Item } from '../../../types/order';
+import { getMediaUrl } from '../../../utils/imageUrl';
 
 export default function MenuItemsManagementPage() {
   const { stores } = useStores();
@@ -51,7 +56,18 @@ export default function MenuItemsManagementPage() {
     }
   }, [stores, selectedStore]);
 
-  const { allItems, categories, isLoading, isError, error, createItem, isCreatingItem } = useMenu(selectedStore);
+  const {
+    allItems,
+    categories,
+    isLoading,
+    isError,
+    error,
+    createItem,
+    isCreatingItem,
+    updateItem,
+    isUpdatingItem,
+    toggleItemActive,
+  } = useMenu(selectedStore);
 
   // Add Item Modal Form state
   const [modalOpen, setModalOpen] = useState(false);
@@ -63,8 +79,27 @@ export default function MenuItemsManagementPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Edit Item Modal Form state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editItemName, setEditItemName] = useState('');
+  const [editItemPrice, setEditItemPrice] = useState('');
+  const [editItemCategory, setEditItemCategory] = useState('');
+  const [editItemDescription, setEditItemDescription] = useState('');
+  const [editItemActive, setEditItemActive] = useState(true);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editFormError, setEditFormError] = useState<string | null>(null);
+
+
+  // Auto-select first available category when categories are fetched
+  React.useEffect(() => {
+    if (categories.length > 0 && !itemCategory) {
+      setItemCategory(categories[0]!.id);
+    }
+  }, [categories, itemCategory]);
+
   const handleCreateItem = async () => {
-    if (!itemName || !itemPrice) {
+    if (!itemName.trim() || !itemPrice) {
       setFormError('Please enter item name and price.');
       return;
     }
@@ -72,17 +107,23 @@ export default function MenuItemsManagementPage() {
     setFormError(null);
     try {
       const formData = new FormData();
-      formData.append('name', itemName);
+      formData.append('name', itemName.trim());
       formData.append('price', itemPrice);
-      if (itemCategory) formData.append('category_name', itemCategory);
-      if (itemDescription) formData.append('description', itemDescription);
+      if (itemCategory) {
+        formData.append('category_id', itemCategory);
+        const matchedCategory = categories.find((c) => c.id === itemCategory);
+        if (matchedCategory) {
+          formData.append('category_name', matchedCategory.name);
+        }
+      }
+      if (itemDescription) formData.append('description', itemDescription.trim());
       if (imageFile) formData.append('image', imageFile);
 
       await createItem(formData);
       setSuccessMsg(`Item "${itemName}" added to menu successfully!`);
       setItemName('');
       setItemPrice('');
-      setItemCategory('');
+      setItemCategory(categories[0]?.id || '');
       setItemDescription('');
       setImageFile(null);
       setModalOpen(false);
@@ -91,13 +132,73 @@ export default function MenuItemsManagementPage() {
     }
   };
 
+  const handleOpenEdit = (item: Item) => {
+    setEditingItem(item);
+    setEditItemName(item.name);
+    setEditItemPrice(item.price.toString());
+    setEditItemCategory(item.category_id || item.category?.id || (categories[0]?.id || ''));
+    setEditItemDescription(item.description || '');
+    setEditItemActive(item.is_active !== false);
+    setEditImageFile(null);
+    setEditFormError(null);
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateItem = async () => {
+    if (!editingItem) return;
+    if (!editItemName.trim() || !editItemPrice) {
+      setEditFormError('Please enter item name and price.');
+      return;
+    }
+
+    setEditFormError(null);
+    try {
+      if (editImageFile) {
+        const formData = new FormData();
+        formData.append('name', editItemName.trim());
+        formData.append('price', editItemPrice);
+        formData.append('description', editItemDescription.trim());
+        if (editItemCategory) {
+          formData.append('category_id', editItemCategory);
+          const matchedCategory = categories.find((c) => c.id === editItemCategory);
+          if (matchedCategory) {
+            formData.append('category_name', matchedCategory.name);
+          }
+        }
+        formData.append('is_active', String(editItemActive));
+        formData.append('image', editImageFile);
+
+        await updateItem({ itemId: editingItem.id, data: formData });
+      } else {
+        await updateItem({
+          itemId: editingItem.id,
+          data: {
+            name: editItemName.trim(),
+            price: Number(editItemPrice),
+            description: editItemDescription.trim(),
+            category_id: editItemCategory || undefined,
+            is_active: editItemActive,
+          },
+        });
+      }
+
+      setSuccessMsg(`Item "${editItemName}" updated successfully!`);
+      setEditModalOpen(false);
+      setEditingItem(null);
+    } catch (err: unknown) {
+      setEditFormError((err as Error).message || 'Failed to update item.');
+    }
+  };
+
+
   const filteredItems = allItems.filter((item) =>
     !debouncedSearch || item.name.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
-      <AdminSidebar />
+    <AdminGuard>
+      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+        <AdminSidebar />
 
       <Box sx={{ flex: 1, p: 4, overflowY: 'auto' }}>
         {/* Top Header */}
@@ -150,12 +251,33 @@ export default function MenuItemsManagementPage() {
           }}
         >
           {/* Store Switcher */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <Select
               value={selectedStore}
               onChange={(e) => setSelectedStore(e.target.value)}
               displayEmpty
-              sx={{ borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600 }}
+              sx={{
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#0F172A',
+                backgroundColor: '#FFFFFF',
+                '& .MuiSelect-select': { color: '#0F172A !important' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1 !important' },
+                '& .MuiSvgIcon-root': { color: '#64748B' },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    backgroundColor: '#FFFFFF',
+                    '& .MuiMenuItem-root': {
+                      color: '#0F172A',
+                      fontWeight: 500,
+                      '&:hover': { backgroundColor: '#F1F5F9' },
+                    },
+                  },
+                },
+              }}
             >
               {stores.map((s) => (
                 <MenuItem key={s.id} value={s.id}>
@@ -174,10 +296,18 @@ export default function MenuItemsManagementPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#94A3B8', fontSize: 18 }} />
+                  <SearchIcon sx={{ color: '#64748B', fontSize: 18 }} />
                 </InputAdornment>
               ),
-              sx: { borderRadius: '10px', fontSize: '0.85rem' },
+              sx: {
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                backgroundColor: '#FFFFFF',
+                color: '#0F172A',
+                '& .MuiInputBase-input': { color: '#0F172A !important' },
+                '& .MuiInputBase-input::placeholder': { color: '#64748B !important', opacity: 1 },
+                '& fieldset': { borderColor: '#CBD5E1 !important' },
+              },
             }}
             sx={{ flex: '1 1 200px' }}
           />
@@ -224,17 +354,18 @@ export default function MenuItemsManagementPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box
                         component="img"
-                        src={item.image_url || '/images/food/burger.jpg'}
+                        src={getMediaUrl(item.image_url)}
                         alt={item.name}
                         onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                           e.currentTarget.src = '/images/food/burger.jpg';
                         }}
                         sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '8px',
+                          width: 44,
+                          height: 44,
+                          borderRadius: '10px',
                           objectFit: 'cover',
                           backgroundColor: '#F1F5F9',
+                          border: '1px solid #E2E8F0',
                         }}
                       />
                       <Box>
@@ -251,34 +382,71 @@ export default function MenuItemsManagementPage() {
                     <Chip
                       label={item.category?.name || 'Main Menu'}
                       size="small"
-                      sx={{ borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem', backgroundColor: '#F1F5F9' }}
+                      sx={{
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        backgroundColor: '#F1F5F9',
+                        color: '#334155',
+                        border: '1px solid #E2E8F0',
+                      }}
                     />
                   </TableCell>
                   <TableCell sx={{ fontWeight: 800, color: '#0F172A' }}>
                     ${Number(item.price).toFixed(2)}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label="Active"
-                      size="small"
-                      sx={{
-                        borderRadius: '6px',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        backgroundColor: '#DCFCE7',
-                        color: '#15803D',
-                      }}
-                    />
+                    <Tooltip title={item.is_active !== false ? 'Click to deactivate item' : 'Click to activate item'}>
+                      <Chip
+                        label={item.is_active !== false ? 'Active' : 'Inactive'}
+                        size="small"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const newStatus = !(item.is_active !== false);
+                            await toggleItemActive(item.id, newStatus);
+                            setSuccessMsg(`"${item.name}" marked as ${newStatus ? 'Active' : 'Inactive'}`);
+                          } catch (err: unknown) {
+                            setFormError((err as Error).message || 'Failed to toggle status');
+                          }
+                        }}
+                        clickable
+                        sx={{
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          backgroundColor: item.is_active !== false ? '#DCFCE7' : '#F1F5F9',
+                          color: item.is_active !== false ? '#15803D' : '#64748B',
+                          border: item.is_active !== false ? '1px solid #BBF7D0' : '1px solid #CBD5E1',
+                          '&:hover': {
+                            backgroundColor: item.is_active !== false ? '#BBF7D0' : '#E2E8F0',
+                            transform: 'scale(1.05)',
+                          },
+                          transition: 'all 0.15s ease-in-out',
+                        }}
+                      />
+                    </Tooltip>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'right' }}>
                     <Button
                       size="small"
-                      sx={{ color: '#3B82F6', fontWeight: 700, textTransform: 'none', '&:hover': { backgroundColor: '#EFF6FF' } }}
+                      onClick={() => handleOpenEdit(item)}
+                      sx={{
+                        color: '#3B82F6',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '8px',
+                        '&:hover': { backgroundColor: '#EFF6FF' },
+                      }}
                     >
                       Edit
                     </Button>
                   </TableCell>
                 </TableRow>
+
               ))}
             </TableBody>
           </Table>
@@ -290,62 +458,149 @@ export default function MenuItemsManagementPage() {
           onClose={() => setModalOpen(false)}
           maxWidth="sm"
           fullWidth
-          PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+          PaperProps={{
+            sx: {
+              borderRadius: '20px',
+              p: 1,
+              backgroundColor: '#FFFFFF',
+              color: '#0F172A',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+            },
+          }}
         >
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Add Menu Item
-            </Typography>
-            <IconButton size="small" onClick={() => setModalOpen(false)}>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#0F172A', fontWeight: 800 }}>
+            Add Menu Item
+            <IconButton size="small" onClick={() => setModalOpen(false)} sx={{ color: '#64748B' }}>
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent dividers>
+          <DialogContent dividers sx={{ borderColor: '#E2E8F0' }}>
             {formError && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: '10px' }}>
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 2,
+                  borderRadius: '10px',
+                  backgroundColor: '#FEF2F2',
+                  color: '#991B1B',
+                  border: '1px solid #FECACA',
+                }}
+              >
                 {formError}
               </Alert>
             )}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <TextField
-                label="Item Name"
-                placeholder="e.g. Avocado Toast Deluxe"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                fullWidth
-                size="small"
-              />
-              <TextField
-                label="Price ($)"
-                placeholder="12.99"
-                type="number"
-                value={itemPrice}
-                onChange={(e) => setItemPrice(e.target.value)}
-                fullWidth
-                size="small"
-              />
-              <FormControl size="small" fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={itemCategory}
-                  label="Category"
-                  onChange={(e) => setItemCategory(e.target.value)}
-                >
-                  <MenuItem value="Main Menu">Main Menu</MenuItem>
-                  <MenuItem value="Appetizer">Appetizer</MenuItem>
-                  <MenuItem value="Beverages">Beverages</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                label="Description"
-                placeholder="Brief delicious description of the dish..."
-                value={itemDescription}
-                onChange={(e) => setItemDescription(e.target.value)}
-                fullWidth
-                multiline
-                rows={2}
-                size="small"
-              />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Item Name
+                </Typography>
+                <TextField
+                  placeholder="e.g. Avocado Toast Deluxe"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      borderRadius: '10px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& .MuiInputBase-input': { color: '#0F172A !important' },
+                      '& fieldset': { borderColor: '#CBD5E1' },
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Price ($)
+                </Typography>
+                <TextField
+                  placeholder="12.99"
+                  type="number"
+                  value={itemPrice}
+                  onChange={(e) => setItemPrice(e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      borderRadius: '10px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& .MuiInputBase-input': { color: '#0F172A !important' },
+                      '& fieldset': { borderColor: '#CBD5E1' },
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Category
+                </Typography>
+                <FormControl size="small" fullWidth>
+                  <Select
+                    value={itemCategory}
+                    onChange={(e) => setItemCategory(e.target.value)}
+                    displayEmpty
+                    sx={{
+                      borderRadius: '10px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& .MuiSelect-select': { color: '#0F172A !important' },
+                      '& fieldset': { borderColor: '#CBD5E1' },
+                    }}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          backgroundColor: '#FFFFFF',
+                          '& .MuiMenuItem-root': {
+                            color: '#0F172A',
+                            '&:hover': { backgroundColor: '#F1F5F9' },
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="" disabled>
+                      Select a category
+                    </MenuItem>
+                    {categories.map((cat) => (
+                      <MenuItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </MenuItem>
+                    ))}
+                    {categories.length === 0 && (
+                      <MenuItem value="">Default Category</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Description
+                </Typography>
+                <TextField
+                  placeholder="Brief delicious description of the dish..."
+                  value={itemDescription}
+                  onChange={(e) => setItemDescription(e.target.value)}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      borderRadius: '10px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& .MuiInputBase-input': { color: '#0F172A !important' },
+                      '& fieldset': { borderColor: '#CBD5E1' },
+                    },
+                  }}
+                />
+              </Box>
 
               {/* Photo Upload Input */}
               <Box
@@ -356,6 +611,7 @@ export default function MenuItemsManagementPage() {
                   textAlign: 'center',
                   backgroundColor: '#F8FAFC',
                   cursor: 'pointer',
+                  '&:hover': { borderColor: '#FF7A00', backgroundColor: '#FFF7ED' },
                 }}
                 component="label"
               >
@@ -369,31 +625,327 @@ export default function MenuItemsManagementPage() {
                     }
                   }}
                 />
-                <CloudUploadIcon sx={{ fontSize: 32, color: '#64748B', mb: 0.5 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
-                  {imageFile ? imageFile.name : 'Click to select dish photo'}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#94A3B8' }}>
-                  PNG, JPG, or WEBP up to 5MB
-                </Typography>
+                {imageFile ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      component="img"
+                      src={URL.createObjectURL(imageFile)}
+                      alt="Preview"
+                      sx={{ width: 70, height: 70, objectFit: 'cover', borderRadius: '10px', border: '2px solid #FF7A00' }}
+                    />
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                      {imageFile.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#FF7A00', fontWeight: 600 }}>
+                      Selected for upload (click to change)
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    <CloudUploadIcon sx={{ fontSize: 32, color: '#64748B', mb: 0.5 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+                      Click to select dish photo
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                      PNG, JPG, or WEBP up to 5MB
+                    </Typography>
+                  </>
+                )}
               </Box>
             </Box>
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setModalOpen(false)} sx={{ color: '#64748B' }}>
+            <Button onClick={() => setModalOpen(false)} sx={{ color: '#64748B', fontWeight: 600 }}>
               Cancel
             </Button>
             <Button
               onClick={handleCreateItem}
               disabled={isCreatingItem}
               variant="contained"
-              sx={{ backgroundColor: '#0F172A', color: '#FFFFFF', fontWeight: 700 }}
+              sx={{
+                backgroundColor: '#0F172A',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                borderRadius: '10px',
+                px: 2.5,
+                '&:hover': { backgroundColor: '#1E293B' },
+              }}
             >
               {isCreatingItem ? <CircularProgress size={20} color="inherit" /> : 'Save Item'}
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Edit Item Modal */}
+        <Dialog
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '20px',
+              p: 1,
+              backgroundColor: '#FFFFFF',
+              color: '#0F172A',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+            },
+          }}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#0F172A', fontWeight: 800 }}>
+            Edit Menu Item
+            <IconButton size="small" onClick={() => setEditModalOpen(false)} sx={{ color: '#64748B' }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ borderColor: '#E2E8F0' }}>
+            {editFormError && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 2,
+                  borderRadius: '10px',
+                  backgroundColor: '#FEF2F2',
+                  color: '#991B1B',
+                  border: '1px solid #FECACA',
+                }}
+              >
+                {editFormError}
+              </Alert>
+            )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Item Name
+                </Typography>
+                <TextField
+                  placeholder="e.g. Avocado Toast Deluxe"
+                  value={editItemName}
+                  onChange={(e) => setEditItemName(e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      borderRadius: '10px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& .MuiInputBase-input': { color: '#0F172A !important' },
+                      '& fieldset': { borderColor: '#CBD5E1' },
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                    Category
+                  </Typography>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={editItemCategory}
+                      onChange={(e) => setEditItemCategory(e.target.value)}
+                      sx={{
+                        borderRadius: '10px',
+                        backgroundColor: '#F8FAFC',
+                        color: '#0F172A',
+                        '& .MuiSelect-select': { color: '#0F172A !important' },
+                        '& fieldset': { borderColor: '#CBD5E1' },
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: '#FFFFFF',
+                            '& .MuiMenuItem-root': {
+                              color: '#0F172A',
+                              '&:hover': { backgroundColor: '#F1F5F9' },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      {categories.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                    Price ($)
+                  </Typography>
+                  <TextField
+                    placeholder="9.99"
+                    type="number"
+                    value={editItemPrice}
+                    onChange={(e) => setEditItemPrice(e.target.value)}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      sx: {
+                        borderRadius: '10px',
+                        backgroundColor: '#F8FAFC',
+                        color: '#0F172A',
+                        '& .MuiInputBase-input': { color: '#0F172A !important' },
+                        '& fieldset': { borderColor: '#CBD5E1' },
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Description
+                </Typography>
+                <TextField
+                  placeholder="Detailed description of taste, ingredients, or serving..."
+                  value={editItemDescription}
+                  onChange={(e) => setEditItemDescription(e.target.value)}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      borderRadius: '10px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& .MuiInputBase-input': { color: '#0F172A !important' },
+                      '& fieldset': { borderColor: '#CBD5E1' },
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Active Toggle Switch */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 1.5,
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '12px',
+                  border: '1px solid #E2E8F0',
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                    Item Available on Menu
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748B' }}>
+                    When active, customers and cashiers can add this item to orders
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={editItemActive}
+                  onChange={(e) => setEditItemActive(e.target.checked)}
+                  color="success"
+                />
+              </Box>
+
+              {/* Photo Upload */}
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Update Dish Photo (Optional)
+                </Typography>
+                <Box
+                  sx={{
+                    border: '2px dashed #CBD5E1',
+                    borderRadius: '12px',
+                    p: 2,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    backgroundColor: '#F8FAFC',
+                    '&:hover': { borderColor: '#FF7A00', backgroundColor: '#FFF7ED' },
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  component="label"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setEditImageFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  {editImageFile ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        component="img"
+                        src={URL.createObjectURL(editImageFile)}
+                        alt="Preview"
+                        sx={{ width: 70, height: 70, objectFit: 'cover', borderRadius: '10px', border: '2px solid #FF7A00' }}
+                      />
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                        {editImageFile.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#FF7A00', fontWeight: 600 }}>
+                        New photo selected (click to change)
+                      </Typography>
+                    </Box>
+                  ) : editingItem?.image_url ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        component="img"
+                        src={getMediaUrl(editingItem.image_url)}
+                        alt={editingItem.name}
+                        sx={{ width: 70, height: 70, objectFit: 'cover', borderRadius: '10px', border: '1px solid #CBD5E1' }}
+                      />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+                        Click to replace current photo
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <>
+                      <CloudUploadIcon sx={{ fontSize: 32, color: '#64748B', mb: 0.5 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+                        Click to select dish photo
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                        PNG, JPG, or WEBP up to 5MB
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setEditModalOpen(false)} sx={{ color: '#64748B', fontWeight: 600 }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateItem}
+              disabled={isUpdatingItem}
+              variant="contained"
+              sx={{
+                backgroundColor: '#FF7A00',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                borderRadius: '10px',
+                px: 2.5,
+                '&:hover': { backgroundColor: '#E06500' },
+              }}
+            >
+              {isUpdatingItem ? <CircularProgress size={20} color="inherit" /> : 'Save Changes'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
       </Box>
     </Box>
+    </AdminGuard>
   );
 }

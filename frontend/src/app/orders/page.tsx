@@ -30,6 +30,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
+import { AdminGuard } from '../../components/auth/AdminGuard';
 import { useStores } from '../../hooks/useStores';
 import { useOrders } from '../../hooks/useOrders';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -71,8 +72,9 @@ export default function OrdersListPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
-      <AdminSidebar />
+    <AdminGuard>
+      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+        <AdminSidebar />
 
       <Box sx={{ flex: 1, p: 4, overflowY: 'auto' }}>
         {/* Top Header */}
@@ -120,12 +122,33 @@ export default function OrdersListPage() {
           }}
         >
           {/* Store Filter */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <Select
               value={selectedStore}
               onChange={(e) => setSelectedStore(e.target.value)}
               displayEmpty
-              sx={{ borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600 }}
+              sx={{
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#0F172A',
+                backgroundColor: '#FFFFFF',
+                '& .MuiSelect-select': { color: '#0F172A !important' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1 !important' },
+                '& .MuiSvgIcon-root': { color: '#64748B' },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    backgroundColor: '#FFFFFF',
+                    '& .MuiMenuItem-root': {
+                      color: '#0F172A',
+                      fontWeight: 500,
+                      '&:hover': { backgroundColor: '#F1F5F9' },
+                    },
+                  },
+                },
+              }}
             >
               {stores.map((s) => (
                 <MenuItem key={s.id} value={s.id}>
@@ -141,7 +164,28 @@ export default function OrdersListPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
               displayEmpty
-              sx={{ borderRadius: '10px', fontSize: '0.85rem' }}
+              sx={{
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#0F172A',
+                backgroundColor: '#FFFFFF',
+                '& .MuiSelect-select': { color: '#0F172A !important' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1 !important' },
+                '& .MuiSvgIcon-root': { color: '#64748B' },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    backgroundColor: '#FFFFFF',
+                    '& .MuiMenuItem-root': {
+                      color: '#0F172A',
+                      fontWeight: 500,
+                      '&:hover': { backgroundColor: '#F1F5F9' },
+                    },
+                  },
+                },
+              }}
             >
               <MenuItem value="">All Statuses</MenuItem>
               <MenuItem value="PLACED">Placed</MenuItem>
@@ -160,10 +204,18 @@ export default function OrdersListPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#94A3B8', fontSize: 18 }} />
+                  <SearchIcon sx={{ color: '#64748B', fontSize: 18 }} />
                 </InputAdornment>
               ),
-              sx: { borderRadius: '10px', fontSize: '0.85rem' },
+              sx: {
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                backgroundColor: '#FFFFFF',
+                color: '#0F172A',
+                '& .MuiInputBase-input': { color: '#0F172A !important' },
+                '& .MuiInputBase-input::placeholder': { color: '#64748B !important', opacity: 1 },
+                '& fieldset': { borderColor: '#CBD5E1 !important' },
+              },
             }}
             sx={{ flex: '1 1 200px' }}
           />
@@ -274,5 +326,6 @@ export default function OrdersListPage() {
         </TableContainer>
       </Box>
     </Box>
+    </AdminGuard>
   );
 }

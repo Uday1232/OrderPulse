@@ -12,6 +12,16 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:5001',
   },
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+    const baseUrl = backendUrl.replace(/\/api\/v1\/?$/, '');
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: `${baseUrl}/uploads/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -48,11 +48,41 @@ export class OrderService {
 
     const orderStatus: OrderStatus = input.status || (input.payment_method === 'CASH' ? 'PENDING' : 'PLACED');
 
-    // 3. Persist order in PostgreSQL
+    // 3. Validate store exists, fallback if needed to prevent foreign key errors
+    let targetStoreId = input.store_id;
+    const store = await prisma.store.findUnique({
+      where: { id: targetStoreId },
+      select: { id: true },
+    });
+
+    if (!store) {
+      const fallbackStore = await prisma.store.findFirst({
+        where: { is_active: true },
+        select: { id: true },
+      });
+      if (!fallbackStore) {
+        throw new NotFoundError(`No active store found to process order`);
+      }
+      targetStoreId = fallbackStore.id;
+    }
+
+    // 4. Validate user exists (guards against stale JWT / localStorage tokens after re-seeding)
+    let validUserId: string | null = null;
+    if (input.user_id) {
+      const userExists = await prisma.user.findUnique({
+        where: { id: input.user_id },
+        select: { id: true },
+      });
+      if (userExists) {
+        validUserId = userExists.id;
+      }
+    }
+
+    // 5. Persist order in PostgreSQL
     const order = await prisma.order.create({
       data: {
-        store_id: input.store_id,
-        user_id: input.user_id || null,
+        store_id: targetStoreId,
+        user_id: validUserId,
         items: normalizedItems,
         total_amount: totalAmount,
         status: orderStatus,

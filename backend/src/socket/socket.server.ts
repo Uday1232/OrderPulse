@@ -37,6 +37,20 @@ export function initializeSocketServer(httpServer: HttpServer, corsOrigins: stri
       logger.info(`Socket ${socket.id} joined user room: user_${initialUserId}`);
     }
 
+    // Automatically join global admins room if role is ADMIN or SUPERADMIN
+    const initialRole = socket.handshake.query.role as string | undefined;
+    if (initialRole === 'ADMIN' || initialRole === 'SUPERADMIN') {
+      socket.join('admins');
+      logger.info(`Socket ${socket.id} joined global admins room (role: ${initialRole})`);
+    }
+
+    // Explicit admin room join
+    socket.on('join:admin', () => {
+      socket.join('admins');
+      logger.info(`Socket ${socket.id} joined global admins room`);
+      socket.emit('admin:joined', { room: 'admins' });
+    });
+
     // Explicit store room join
     socket.on('join:store', (storeId: string) => {
       if (!storeId || typeof storeId !== 'string') return;
@@ -52,6 +66,14 @@ export function initializeSocketServer(httpServer: HttpServer, corsOrigins: stri
       socket.join(`user_${userId}`);
       logger.info(`Socket ${socket.id} joined user room: user_${userId}`);
       socket.emit('user:joined', { userId, room: `user_${userId}` });
+    });
+
+    // Explicit order room join (allows customers and guests to track order status)
+    socket.on('join:order', (orderId: string) => {
+      if (!orderId || typeof orderId !== 'string') return;
+      socket.join(`order_${orderId}`);
+      logger.info(`Socket ${socket.id} joined order room: order_${orderId}`);
+      socket.emit('order:joined', { orderId, room: `order_${orderId}` });
     });
 
     // Leave store room
@@ -86,13 +108,25 @@ export function emitOrderCreated(storeId: string, order: unknown): void {
   if (!ioInstance) return;
   const storeRoom = `store_${storeId}`;
   const legacyRoom = `store:${storeId}`;
+  const orderObj = order as { id?: string; user_id?: string | null };
 
-  // Emit both event names for maximum compatibility
-  ioInstance.to(storeRoom).to(legacyRoom).emit('new_order', order);
-  ioInstance.to(storeRoom).to(legacyRoom).emit('order:created', order);
+  const target = ioInstance.to(storeRoom).to(legacyRoom).to('admins');
+  if (orderObj?.id) {
+    target.to(`order_${orderObj.id}`);
+  }
 
-  logger.info(`Real-time event [new_order] emitted to room ${storeRoom}`, {
-    orderId: (order as { id?: string })?.id,
+  // Emit canonical event to store room, global admins room, and order room
+  target.emit('order:created', order);
+
+  // If order was placed by a registered user, also notify user's private channel
+  if (orderObj?.user_id) {
+    const userRoom = `user_${orderObj.user_id}`;
+    ioInstance.to(userRoom).emit('order:created', order);
+    logger.info(`Real-time event [order:created] sent to customer room ${userRoom}`);
+  }
+
+  logger.info(`Real-time event [order:created] emitted to store room ${storeRoom} and admins room`, {
+    orderId: orderObj?.id,
   });
 }
 
@@ -100,18 +134,23 @@ export function emitOrderUpdated(storeId: string, order: unknown, userId?: strin
   if (!ioInstance) return;
   const storeRoom = `store_${storeId}`;
   const legacyRoom = `store:${storeId}`;
+  const orderObj = order as { id?: string; user_id?: string | null };
 
-  // Broadcast to store room
-  ioInstance.to(storeRoom).to(legacyRoom).emit('order_status_updated', order);
-  ioInstance.to(storeRoom).to(legacyRoom).emit('order:updated', order);
-
-  // If user_id exists, broadcast directly to user's private notification room
-  if (userId) {
-    const userRoom = `user_${userId}`;
-    ioInstance.to(userRoom).emit('order_status_updated', order);
-    ioInstance.to(userRoom).emit('order:updated', order);
-    logger.info(`Real-time event [order_status_updated] sent to user room ${userRoom}`);
+  const target = ioInstance.to(storeRoom).to(legacyRoom).to('admins');
+  if (orderObj?.id) {
+    target.to(`order_${orderObj.id}`);
   }
 
-  logger.info(`Real-time event [order_status_updated] emitted for order ${((order as { id?: string })?.id)}`);
+  // Broadcast canonical event to store room, global admins room, and order room
+  target.emit('order:updated', order);
+
+  // If user_id exists, broadcast directly to user's private notification room
+  const targetUserId = userId || orderObj?.user_id;
+  if (targetUserId) {
+    const userRoom = `user_${targetUserId}`;
+    ioInstance.to(userRoom).emit('order:updated', order);
+    logger.info(`Real-time event [order:updated] sent to customer room ${userRoom}`);
+  }
+
+  logger.info(`Real-time event [order:updated] emitted for order ${orderObj?.id} to store, admins, and customer`);
 }

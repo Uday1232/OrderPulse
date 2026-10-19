@@ -16,19 +16,25 @@ import {
   CircularProgress,
   Stack,
   Divider,
+  Chip,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import { useSnackbar } from 'notistack';
 
 import { useAuth } from '../../hooks/useAuth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
+  const { enqueueSnackbar } = useSnackbar();
 
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +45,9 @@ export default function LoginPage() {
   const handleSignIn = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!email || !password) {
-      setErrorMessage('Please enter both email and password.');
+      const msg = 'Please enter both email and password.';
+      setErrorMessage(msg);
+      enqueueSnackbar(msg, { variant: 'warning', autoHideDuration: 3500 });
       return;
     }
 
@@ -48,27 +56,77 @@ export default function LoginPage() {
 
     try {
       const data = await login({ email, password });
-      if (data.user.role === 'ADMIN') {
+      enqueueSnackbar(`Welcome back, ${data.user.name}! Sign-in successful.`, {
+        variant: 'success',
+        autoHideDuration: 4000,
+      });
+
+      if (data.user.role === 'SUPERADMIN' || data.user.role === 'ADMIN') {
         router.push('/dashboard');
       } else {
         router.push('/pos');
       }
     } catch (err: unknown) {
-      setErrorMessage((err as Error).message || 'Invalid email or password');
+      const msg = (err as Error).message || 'Invalid email or password';
+      setErrorMessage(msg);
+      enqueueSnackbar(msg, { variant: 'error', autoHideDuration: 5000 });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFillDemo = (type: 'ADMIN' | 'USER') => {
-    if (type === 'ADMIN') {
+  const handleSignUp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email.trim() || !password) {
+      const msg = 'Please enter email and password.';
+      setErrorMessage(msg);
+      enqueueSnackbar(msg, { variant: 'warning', autoHideDuration: 3500 });
+      return;
+    }
+
+    if (password.length < 6) {
+      const msg = 'Password must be at least 6 characters.';
+      setErrorMessage(msg);
+      enqueueSnackbar(msg, { variant: 'warning', autoHideDuration: 3500 });
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const resolvedName = name.trim() || email.split('@')[0] || 'Customer';
+
+    try {
+      const data = await register({ name: resolvedName, email: email.trim(), password, role: 'USER' });
+      enqueueSnackbar(`Welcome, ${data.user.name}! Your account has been created.`, {
+        variant: 'success',
+        autoHideDuration: 4000,
+      });
+
+      router.push('/pos');
+    } catch (err: unknown) {
+      const msg = (err as Error).message || 'Registration failed';
+      setErrorMessage(msg);
+      enqueueSnackbar(msg, { variant: 'error', autoHideDuration: 5000 });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFillDemo = (type: 'SUPERADMIN' | 'ADMIN' | 'USER') => {
+    setIsRegistering(false);
+    if (type === 'SUPERADMIN') {
       setEmail('admin@storepulse.com');
+      setPassword('admin123');
+    } else if (type === 'ADMIN') {
+      setEmail('central_admin@storepulse.com');
       setPassword('admin123');
     } else {
       setEmail('user@storepulse.com');
       setPassword('user123');
     }
   };
+
 
   return (
     <Box
@@ -164,19 +222,104 @@ export default function LoginPage() {
       >
         <Box sx={{ width: '100%', maxWidth: 420 }}>
           <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', mb: 1, letterSpacing: '-0.02em' }}>
-            Welcome Back
+            {isRegistering ? 'Create Account' : 'Welcome Back'}
           </Typography>
-          <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
-            Sign in to your account to continue
+          <Typography variant="body2" sx={{ color: '#64748B', mb: 2.5 }}>
+            {isRegistering
+              ? 'Register a new customer or staff account'
+              : 'Sign in to your account to continue'}
           </Typography>
 
+          {/* Sign In vs Register Mode Switcher */}
+          <Box sx={{ display: 'flex', gap: 1, p: 0.6, backgroundColor: '#F1F5F9', borderRadius: '12px', mb: 3 }}>
+            <Button
+              fullWidth
+              onClick={() => { setIsRegistering(false); setErrorMessage(null); }}
+              sx={{
+                py: 0.8,
+                borderRadius: '9px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                backgroundColor: !isRegistering ? '#FFFFFF' : 'transparent',
+                color: !isRegistering ? '#0F172A' : '#64748B',
+                boxShadow: !isRegistering ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                '&:hover': { backgroundColor: !isRegistering ? '#FFFFFF' : '#E2E8F0' },
+              }}
+            >
+              Sign In
+            </Button>
+            <Button
+              fullWidth
+              onClick={() => { setIsRegistering(true); setErrorMessage(null); }}
+              sx={{
+                py: 0.8,
+                borderRadius: '9px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                backgroundColor: isRegistering ? '#FFFFFF' : 'transparent',
+                color: isRegistering ? '#0F172A' : '#64748B',
+                boxShadow: isRegistering ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                '&:hover': { backgroundColor: isRegistering ? '#FFFFFF' : '#E2E8F0' },
+              }}
+            >
+              New User Register
+            </Button>
+          </Box>
+
           {errorMessage && (
-            <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }}>
+            <Alert
+              severity="error"
+              sx={{
+                mb: 2.5,
+                borderRadius: '12px',
+                backgroundColor: '#FEF2F2',
+                color: '#991B1B',
+                border: '1px solid #FCA5A5',
+                fontWeight: 600,
+                '& .MuiAlert-icon': {
+                  color: '#DC2626',
+                },
+              }}
+            >
               {errorMessage}
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSignIn} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box
+            component="form"
+            onSubmit={isRegistering ? handleSignUp : handleSignIn}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            {isRegistering && (
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
+                  Full Name
+                </Typography>
+                <TextField
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutlineIcon sx={{ color: '#94A3B8', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      borderRadius: '12px',
+                      backgroundColor: '#F8FAFC',
+                      color: '#0F172A',
+                      '& fieldset': { borderColor: '#E2E8F0' },
+                    },
+                  }}
+                />
+              </Box>
+            )}
+
             <Box>
               <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
                 Email
@@ -184,7 +327,7 @@ export default function LoginPage() {
               <TextField
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@storepulse.com"
+                placeholder={isRegistering ? 'john@example.com' : 'admin@storepulse.com'}
                 type="email"
                 fullWidth
                 size="small"
@@ -211,7 +354,7 @@ export default function LoginPage() {
               <TextField
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={isRegistering ? 'At least 6 characters' : '••••••••'}
                 type={showPassword ? 'text' : 'password'}
                 fullWidth
                 size="small"
@@ -238,31 +381,36 @@ export default function LoginPage() {
               />
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: -0.5 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    size="small"
-                    sx={{ color: '#CBD5E1', '&.Mui-checked': { color: '#FF7A00' } }}
-                  />
-                }
-                label={<Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>Remember me</Typography>}
-              />
-              <Typography
-                variant="body2"
-                component="a"
-                href="#forgot"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Password reset link has been dispatched to your email.');
-                }}
-                sx={{ color: '#FF7A00', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-              >
-                Forgot password?
-              </Typography>
-            </Box>
+            {!isRegistering && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: -0.5 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      size="small"
+                      sx={{ color: '#CBD5E1', '&.Mui-checked': { color: '#FF7A00' } }}
+                    />
+                  }
+                  label={<Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>Remember me</Typography>}
+                />
+                <Typography
+                  variant="body2"
+                  component="a"
+                  href="#forgot"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    enqueueSnackbar('Password reset link has been dispatched to your email.', {
+                      variant: 'info',
+                      autoHideDuration: 4000,
+                    });
+                  }}
+                  sx={{ color: '#FF7A00', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  Forgot password?
+                </Typography>
+              </Box>
+            )}
 
             <Button
               type="submit"
@@ -272,63 +420,91 @@ export default function LoginPage() {
                 mt: 1,
                 py: 1.4,
                 borderRadius: '12px',
-                backgroundColor: '#0F172A',
+                backgroundColor: isRegistering ? '#FF7A00' : '#0F172A',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: '0.95rem',
-                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
-                '&:hover': { backgroundColor: '#1E293B' },
+                boxShadow: isRegistering ? '0 4px 14px rgba(255, 122, 0, 0.35)' : '0 4px 14px rgba(15, 23, 42, 0.25)',
+                '&:hover': { backgroundColor: isRegistering ? '#E06500' : '#1E293B' },
               }}
             >
-              {isLoading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+              {isLoading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : isRegistering ? (
+                'Create Customer Account'
+              ) : (
+                'Sign In'
+              )}
             </Button>
           </Box>
 
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600 }}>
-              QUICK LOGIN PRESETS
-            </Typography>
-          </Divider>
+          {!isRegistering && (
+            <>
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600 }}>
+                  QUICK LOGIN PRESETS
+                </Typography>
+              </Divider>
 
-          {/* Quick Fill Demo Accounts */}
-          <Stack direction="row" spacing={1.5}>
-            <Button
-              onClick={() => handleFillDemo('ADMIN')}
-              fullWidth
-              variant="outlined"
-              size="small"
-              sx={{
-                borderRadius: '10px',
-                borderColor: '#E2E8F0',
-                color: '#334155',
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                py: 1,
-                '&:hover': { borderColor: '#FF7A00', color: '#FF7A00', backgroundColor: '#FFF7ED' },
-              }}
-            >
-              ⚡ Fill Admin
-            </Button>
-            <Button
-              onClick={() => handleFillDemo('USER')}
-              fullWidth
-              variant="outlined"
-              size="small"
-              sx={{
-                borderRadius: '10px',
-                borderColor: '#E2E8F0',
-                color: '#334155',
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                py: 1,
-                '&:hover': { borderColor: '#FF7A00', color: '#FF7A00', backgroundColor: '#FFF7ED' },
-              }}
-            >
-              ⚡ Fill User
-            </Button>
-          </Stack>
+              {/* Quick Fill Demo Accounts */}
+              <Stack direction="row" spacing={1}>
+                <Button
+                  onClick={() => handleFillDemo('SUPERADMIN')}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderRadius: '10px',
+                    borderColor: '#E2E8F0',
+                    color: '#4F46E5',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    py: 0.9,
+                    '&:hover': { borderColor: '#4F46E5', backgroundColor: '#EEF2FF' },
+                  }}
+                >
+                  👑 SuperAdmin
+                </Button>
+                <Button
+                  onClick={() => handleFillDemo('ADMIN')}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderRadius: '10px',
+                    borderColor: '#E2E8F0',
+                    color: '#0F172A',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    py: 0.9,
+                    '&:hover': { borderColor: '#0F172A', backgroundColor: '#F1F5F9' },
+                  }}
+                >
+                  🛡️ Admin
+                </Button>
+                <Button
+                  onClick={() => handleFillDemo('USER')}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderRadius: '10px',
+                    borderColor: '#E2E8F0',
+                    color: '#EA580C',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    py: 0.9,
+                    '&:hover': { borderColor: '#FF7A00', backgroundColor: '#FFF7ED' },
+                  }}
+                >
+                  👤 Customer
+                </Button>
+              </Stack>
+            </>
+          )}
         </Box>
       </Box>
     </Box>
   );
 }
+

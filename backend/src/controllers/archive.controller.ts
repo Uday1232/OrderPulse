@@ -20,4 +20,19 @@ export class ArchiveController {
       next(error);
     }
   }
+
+  static async getArchivableOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const days = parseInt(req.query.days_threshold as string, 10) || 30;
+      const orders = await ArchiveService.getArchivableOrders(days);
+      res.status(200).json({
+        success: true,
+        data: orders,
+        totalArchivable: orders.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

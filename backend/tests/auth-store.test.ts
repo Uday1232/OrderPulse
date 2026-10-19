@@ -157,6 +157,33 @@ describe('Auth & Store Endpoints', () => {
       expect(res.body.success).toBe(false);
     });
 
+    it('should allow ADMIN to update an existing store', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/stores/${createdStoreId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Seaside Pavilion Grand Resort',
+          location: 'Beachfront Road, Bay Area North',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.name).toBe('Seaside Pavilion Grand Resort');
+      expect(res.body.data.location).toBe('Beachfront Road, Bay Area North');
+    });
+
+    it('should forbid regular USER from updating a store', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/stores/${createdStoreId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          name: 'Hacked Store',
+        })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+    });
+
     it('should return categorized menu for a store', async () => {
       const res = await request(app)
         .get(`/api/v1/stores/${createdStoreId}/menu`)

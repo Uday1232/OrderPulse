@@ -27,6 +27,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 
 import { useOrderSocket } from '../context/SocketContext';
 import { useAuth } from '../hooks/useAuth';
+import { NotificationPopover } from './NotificationPopover';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -40,12 +41,6 @@ export function Navbar() {
 
   const NAV_LINKS = [
     { label: 'POS Terminal', path: '/pos', icon: <PointOfSaleIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Orders', path: '/orders', icon: <ViewListIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Stores', path: '/admin/stores', icon: <StoreIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Menu Items', path: '/admin/menu', icon: <RestaurantMenuIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Analytics', path: '/analytics', icon: <BarChartIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Archive', path: '/archive', icon: <ArchiveIcon sx={{ fontSize: 18 }} /> },
   ];
 
   return (
@@ -155,6 +150,19 @@ export function Navbar() {
                 letterSpacing: '0.04em',
                 px: 0.5,
               }}
+            />
+
+            {/* Global Real-time Notification Popover */}
+            <NotificationPopover
+              buttonSx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderColor: 'rgba(255, 255, 255, 0.15)',
+                color: '#FFFFFF',
+                width: 38,
+                height: 38,
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
+              }}
+              iconSx={{ fontSize: 20 }}
             />
 
             {/* User Session Profile / Login */}

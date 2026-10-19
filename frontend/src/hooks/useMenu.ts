@@ -29,6 +29,43 @@ export function useMenu(storeId: string) {
     },
   });
 
+  const updateItemMutation = useMutation({
+    mutationFn: ({
+      itemId,
+      data,
+    }: {
+      itemId: string;
+      data:
+        | FormData
+        | {
+            name?: string;
+            price?: number;
+            description?: string;
+            category_id?: string;
+            category_name?: string;
+            rating?: number;
+            is_active?: boolean;
+          };
+    }) => ApiService.updateStoreItem(storeId, itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu', storeId] });
+    },
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (itemId: string) => ApiService.deleteStoreItem(storeId, itemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu', storeId] });
+    },
+  });
+
+  const toggleItemActive = async (itemId: string, newActiveStatus: boolean) => {
+    return updateItemMutation.mutateAsync({
+      itemId,
+      data: { is_active: newActiveStatus },
+    });
+  };
+
   const categories: Category[] = Array.isArray(menuQuery.data) ? menuQuery.data : [];
 
   // Flatten all items across categories for easy searching and grid rendering
@@ -49,5 +86,10 @@ export function useMenu(storeId: string) {
     refetch: menuQuery.refetch,
     createItem: createItemMutation.mutateAsync,
     isCreatingItem: createItemMutation.isPending,
+    updateItem: updateItemMutation.mutateAsync,
+    isUpdatingItem: updateItemMutation.isPending,
+    deleteItem: deleteItemMutation.mutateAsync,
+    isDeletingItem: deleteItemMutation.isPending,
+    toggleItemActive,
   };
 }

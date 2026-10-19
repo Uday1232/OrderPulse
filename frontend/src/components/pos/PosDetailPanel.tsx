@@ -16,18 +16,12 @@ import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { Item } from '../../types/order';
 import { useCartStore } from '../../store/useCartStore';
+import { getMediaUrl } from '../../utils/imageUrl';
 
 interface PosDetailPanelProps {
   item: Item | null;
   onClose?: () => void;
 }
-
-const INGREDIENTS = [
-  { name: 'Carrot', emoji: '🥕', color: '#FFF7ED', border: '#FED7AA' },
-  { name: 'Lettuce', emoji: '🥬', color: '#F0FDF4', border: '#BBF7D0' },
-  { name: 'Tomato', emoji: '🍅', color: '#FEF2F2', border: '#FECACA' },
-  { name: 'Cucumber', emoji: '🥒', color: '#ECFDF5', border: '#A7F3D0' },
-];
 
 export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
   const {
@@ -113,7 +107,7 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
         >
           <Box
             component="img"
-            src={item.image_url || '/images/food/sandwich.jpg'}
+            src={getMediaUrl(item.image_url, '/images/food/sandwich.jpg')}
             alt={item.name}
             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
               e.currentTarget.src = '/images/food/sandwich.jpg';
@@ -205,56 +199,6 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
             {item.description ||
               'This delectable creation features a medley of fresh, garden-fresh vegetables, savory herbs, and zesty condiments, all nestled between perfectly toasted artisanal bread. Savor the essence of pure taste in every bite!'}
           </Typography>
-        </Box>
-
-        {/* Ingredients Visual Chips */}
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              fontWeight: 700,
-              color: '#334155',
-              mb: 1.2,
-              fontSize: '0.9rem',
-            }}
-          >
-            Ingredients:
-          </Typography>
-          <Stack direction="row" spacing={1.2}>
-            {INGREDIENTS.map((ing) => (
-              <Box
-                key={ing.name}
-                sx={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  p: 1.2,
-                  borderRadius: '14px',
-                  backgroundColor: ing.color,
-                  border: `1px solid ${ing.border}`,
-                  transition: 'transform 0.2s',
-                  '&:hover': { transform: 'scale(1.05)' },
-                }}
-              >
-                <Typography sx={{ fontSize: '1.4rem', lineHeight: 1 }}>
-                  {ing.emoji}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 600,
-                    color: '#475569',
-                    fontSize: '0.7rem',
-                    mt: 0.5,
-                  }}
-                >
-                  {ing.name}
-                </Typography>
-              </Box>
-            ))}
-          </Stack>
         </Box>
       </Box>
 

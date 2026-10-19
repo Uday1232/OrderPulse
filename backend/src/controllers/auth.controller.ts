@@ -40,4 +40,44 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async getAllUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const users = await AuthService.getAllUsers();
+      res.status(200).json({
+        success: true,
+        data: users,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async createAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AuthService.createAdmin(req.body);
+      res.status(201).json({
+        success: true,
+        message: 'Admin account created successfully with auto-generated credentials',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateUserRole(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      const updated = await AuthService.updateUserRole(id!, role, req.user?.role);
+      res.status(200).json({
+        success: true,
+        message: `User role updated to ${role} successfully`,
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -23,6 +23,21 @@ export function useStores() {
     },
   });
 
+  const updateStoreMutation = useMutation({
+    mutationFn: ({ storeId, data }: { storeId: string; data: { name?: string; location?: string; is_active?: boolean } }) =>
+      ApiService.updateStore(storeId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+    },
+  });
+
+  const deleteStoreMutation = useMutation({
+    mutationFn: (storeId: string) => ApiService.deleteStore(storeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+    },
+  });
+
   return {
     stores: storesQuery.data || [],
     isLoading: storesQuery.isLoading,
@@ -31,5 +46,9 @@ export function useStores() {
     refetch: storesQuery.refetch,
     createStore: createStoreMutation.mutateAsync,
     isCreating: createStoreMutation.isPending,
+    updateStore: updateStoreMutation.mutateAsync,
+    isUpdating: updateStoreMutation.isPending,
+    deleteStore: deleteStoreMutation.mutateAsync,
+    isDeleting: deleteStoreMutation.isPending,
   };
 }

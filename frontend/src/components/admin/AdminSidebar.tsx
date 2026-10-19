@@ -14,6 +14,8 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 import { useAuth } from '../../hooks/useAuth';
 
@@ -23,6 +25,8 @@ const NAV_ITEMS = [
   { label: 'Create Order', path: '/pos', icon: <AddShoppingCartIcon sx={{ fontSize: 20 }} /> },
   { label: 'Stores', path: '/admin/stores', icon: <StoreIcon sx={{ fontSize: 20 }} /> },
   { label: 'Menu Items', path: '/admin/menu', icon: <RestaurantMenuIcon sx={{ fontSize: 20 }} /> },
+  { label: 'Offers & Deals', path: '/admin/offers', icon: <LocalOfferIcon sx={{ fontSize: 20 }} /> },
+  { label: 'Staff & Roles', path: '/admin/users', icon: <PeopleAltIcon sx={{ fontSize: 20 }} /> },
   { label: 'Analytics', path: '/analytics', icon: <BarChartIcon sx={{ fontSize: 20 }} /> },
   { label: 'Archive', path: '/archive', icon: <ArchiveIcon sx={{ fontSize: 20 }} /> },
 ];

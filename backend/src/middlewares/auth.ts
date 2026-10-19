@@ -45,10 +45,12 @@ export function authorizeRoles(...roles: Role[]) {
       throw new UnauthorizedError('Authentication required');
     }
 
-    if (!roles.includes(req.user.role)) {
-      throw new ForbiddenError(`Access denied. Requires one of roles: ${roles.join(', ')}`);
+    // SUPERADMIN has master privileges over all endpoints
+    if (req.user.role === 'SUPERADMIN' || roles.includes(req.user.role)) {
+      next();
+      return;
     }
 
-    next();
+    throw new ForbiddenError(`Access denied. Requires one of roles: ${roles.join(', ')}`);
   };
 }

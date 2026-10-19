@@ -26,40 +26,69 @@ import StorageIcon from '@mui/icons-material/Storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
+import { AdminGuard } from '../../components/auth/AdminGuard';
 import { ApiService } from '../../services/api';
 
 export default function AnalyticsPage() {
   const queryClient = useQueryClient();
 
-  // Fetch Analytics with React Query
-  const { data, isLoading, isError, error, isFetching } = useQuery({
+  // Fetch Analytics with React Query (real-time, refetched on socket events or refresh button)
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['analytics'],
-    queryFn: () => ApiService.getAnalytics(false),
-  });
-
-  // Force refresh mutation to bust Redis cache
-  const forceRefreshMutation = useMutation({
-    mutationFn: () => ApiService.getAnalytics(true),
-    onSuccess: (newData) => {
-      queryClient.setQueryData(['analytics'], newData);
-    },
+    queryFn: () => ApiService.getAnalytics(true),
+    refetchInterval: 15000, // Background poll every 15s in addition to WebSocket cache-bust
   });
 
   const analytics = data?.data;
-  const summary = analytics?.summary || { totalOrders: 128, totalRevenue: 48250, totalStores: 3 };
-  const avgOrderValue = summary.totalOrders > 0 ? (summary.totalRevenue / summary.totalOrders).toFixed(2) : '37.60';
+  const summary = analytics?.summary || { totalOrders: 0, totalRevenue: 0, totalStores: 0 };
+  const avgOrderValue = summary.totalOrders > 0 ? (summary.totalRevenue / summary.totalOrders).toFixed(2) : '0.00';
 
-  const TOP_SELLING_DEFAULTS = [
-    { name: 'Classic Burger', count: 45, color: '#3B82F6' },
-    { name: 'Veg Pizza', count: 38, color: '#10B981' },
-    { name: 'French Fries', count: 32, color: '#F59E0B' },
-    { name: 'Cold Coffee', count: 28, color: '#EC4899' },
-    { name: 'Sandwich', count: 25, color: '#8B5CF6' },
-  ];
+  // Real-time daily orders (last 7 days from DB)
+  const rawOrdersPerDay = analytics?.ordersPerDay || [];
+  const displayOrdersPerDay = rawOrdersPerDay.length > 0
+    ? rawOrdersPerDay.slice(-7).map((d) => {
+        const parts = d.date.split('-');
+        const formattedDate = parts.length === 3 ? `${new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : d.date;
+        return {
+          day: formattedDate,
+          count: d.order_count,
+          revenue: d.daily_revenue,
+        };
+      })
+    : [];
+
+  const maxDailyCount = Math.max(...displayOrdersPerDay.map((d) => d.count), 1);
+
+  // Real-time revenue per store
+  const storeColors = ['#3B82F6', '#FF7A00', '#10B981', '#8B5CF6', '#EC4899'];
+  const rawRevenuePerStore = analytics?.revenuePerStore || [];
+  const displayRevenuePerStore = rawRevenuePerStore.map((s, idx) => ({
+    store: s.store_name || `Store #${s.store_id.slice(0, 6)}`,
+    revenue: Number(s.total_revenue || 0),
+    orders: s.total_orders,
+    color: storeColors[idx % storeColors.length]!,
+  }));
+
+  const maxStoreRevenue = Math.max(...displayRevenuePerStore.map((s) => s.revenue), 1);
+
+  // Real-time top selling items
+  const itemColors = ['#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6'];
+  const rawTopItems = analytics?.topSellingItems || [];
+  const displayTopItems = rawTopItems.length > 0
+    ? rawTopItems.map((item, idx) => ({
+        name: item.item_name,
+        count: item.total_quantity_sold,
+        revenue: item.total_revenue,
+        color: itemColors[idx % itemColors.length]!,
+      }))
+    : [];
+
+  const maxItemCount = Math.max(...displayTopItems.map((i) => i.count), 1);
 
   return (
-    <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
-      <AdminSidebar />
+    <AdminGuard>
+      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+        <AdminSidebar />
 
       <Box sx={{ flex: 1, p: 4, overflowY: 'auto' }}>
         {/* Top Header */}
@@ -69,26 +98,27 @@ export default function AnalyticsPage() {
               Analytics
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748B' }}>
-              Business insights and performance metrics across all stores
+              100% Real-time business insights and revenue metrics across all stores
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Chip
-              icon={<StorageIcon sx={{ fontSize: '1rem !important' }} />}
-              label={analytics?.fromCache ? 'Redis Cached' : 'Live DB'}
+              icon={<StorageIcon sx={{ fontSize: '1rem !important', color: '#15803D !important' }} />}
+              label="Real-Time PostgreSQL Live"
               size="small"
               sx={{
                 borderRadius: '8px',
                 fontWeight: 700,
-                backgroundColor: analytics?.fromCache ? '#DBEAFE' : '#DCFCE7',
-                color: analytics?.fromCache ? '#1D4ED8' : '#15803D',
+                backgroundColor: '#DCFCE7',
+                color: '#15803D',
+                border: '1px solid #BBF7D0',
               }}
             />
 
             <Button
-              onClick={() => forceRefreshMutation.mutate()}
-              disabled={forceRefreshMutation.isPending || isFetching}
+              onClick={() => refetch()}
+              disabled={isFetching}
               variant="outlined"
               startIcon={<RefreshIcon />}
               sx={{
@@ -101,7 +131,7 @@ export default function AnalyticsPage() {
                 '&:hover': { borderColor: '#3B82F6', color: '#3B82F6' },
               }}
             >
-              {forceRefreshMutation.isPending ? 'Busting Cache...' : 'Refresh Cache'}
+              {isFetching ? 'Refreshing...' : 'Refresh Live Data'}
             </Button>
           </Box>
         </Box>
@@ -118,7 +148,7 @@ export default function AnalyticsPage() {
           </Alert>
         )}
 
-        {/* 3 Metric Cards matching Image 2 Screen 8 */}
+        {/* 3 Metric Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* Total Orders */}
           <Grid item xs={12} md={4}>
@@ -132,7 +162,7 @@ export default function AnalyticsPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
                 <TrendingUpIcon sx={{ fontSize: 16 }} />
                 <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                  +12% vs last week
+                  Live Order Count
                 </Typography>
               </Box>
             </Card>
@@ -150,7 +180,7 @@ export default function AnalyticsPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
                 <TrendingUpIcon sx={{ fontSize: 16 }} />
                 <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                  +16% vs last week
+                  Real-time Net Gross
                 </Typography>
               </Box>
             </Card>
@@ -168,7 +198,7 @@ export default function AnalyticsPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
                 <TrendingUpIcon sx={{ fontSize: 16 }} />
                 <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                  +6% vs last week
+                  Per-Transaction Average
                 </Typography>
               </Box>
             </Card>
@@ -185,38 +215,40 @@ export default function AnalyticsPage() {
                   Orders Per Day
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
-                  Last 7 Days
+                  Live Daily Trend
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 180, pt: 2, px: 2 }}>
-                {[
-                  { day: 'Oct 10', count: 18 },
-                  { day: 'Oct 11', count: 24 },
-                  { day: 'Oct 12', count: 16 },
-                  { day: 'Oct 13', count: 32 },
-                  { day: 'Oct 14', count: 28 },
-                  { day: 'Oct 15', count: 38 },
-                  { day: 'Oct 16', count: 22 },
-                ].map((item) => (
-                  <Box key={item.day} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.75rem' }}>
-                      {item.count}
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: item.count * 3.6,
-                        backgroundColor: '#3B82F6',
-                        borderRadius: '6px 6px 0 0',
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.7rem' }}>
-                      {item.day}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
+              {displayOrdersPerDay.length === 0 ? (
+                <Box sx={{ py: 6, textAlign: 'center', color: '#94A3B8' }}>
+                  <Typography variant="body2">No daily orders recorded yet</Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 180, pt: 2, px: 2 }}>
+                  {displayOrdersPerDay.map((item) => {
+                    const barHeight = Math.max((item.count / maxDailyCount) * 120, 12);
+                    return (
+                      <Box key={item.day} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.75rem' }}>
+                          {item.count}
+                        </Typography>
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: barHeight,
+                            backgroundColor: '#3B82F6',
+                            borderRadius: '6px 6px 0 0',
+                            transition: 'height 0.3s ease',
+                          }}
+                        />
+                        <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.7rem' }}>
+                          {item.day}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
             </Card>
           </Grid>
 
@@ -228,34 +260,51 @@ export default function AnalyticsPage() {
                   Revenue Per Store
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
-                  Active Locations
+                  {displayRevenuePerStore.length} Active Stores
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 180, pt: 2, px: 4 }}>
-                {[
-                  { store: 'Central', rev: 22, color: '#3B82F6' },
-                  { store: 'North', rev: 16, color: '#FF7A00' },
-                  { store: 'South', rev: 10, color: '#10B981' },
-                ].map((item) => (
-                  <Box key={item.store} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
-                      ${item.rev}k
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: 56,
-                        height: item.rev * 6,
-                        backgroundColor: item.color,
-                        borderRadius: '8px 8px 0 0',
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ color: '#334155', fontWeight: 600 }}>
-                      {item.store}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
+              {displayRevenuePerStore.length === 0 ? (
+                <Box sx={{ py: 6, textAlign: 'center', color: '#94A3B8' }}>
+                  <Typography variant="body2">No store revenue recorded yet</Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 180, pt: 2, px: 2 }}>
+                  {displayRevenuePerStore.map((item) => {
+                    const barHeight = Math.max((item.revenue / maxStoreRevenue) * 120, 12);
+                    return (
+                      <Box key={item.store} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
+                          ${item.revenue.toFixed(0)}
+                        </Typography>
+                        <Box
+                          sx={{
+                            width: 52,
+                            height: barHeight,
+                            backgroundColor: item.color,
+                            borderRadius: '8px 8px 0 0',
+                            transition: 'height 0.3s ease',
+                          }}
+                        />
+                        <Typography
+                          variant="caption"
+                          noWrap
+                          sx={{
+                            color: '#334155',
+                            fontWeight: 600,
+                            maxWidth: 90,
+                            textAlign: 'center',
+                            display: 'block',
+                          }}
+                          title={item.store}
+                        >
+                          {item.store}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
             </Card>
           </Grid>
         </Grid>
@@ -266,32 +315,39 @@ export default function AnalyticsPage() {
             Top 5 Selling Items
           </Typography>
 
-          <Stack spacing={2.5}>
-            {TOP_SELLING_DEFAULTS.map((item) => (
-              <Box key={item.name}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
-                    {item.name}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: item.color }}>
-                    {item.count} sold
-                  </Typography>
+          {displayTopItems.length === 0 ? (
+            <Box sx={{ py: 4, textAlign: 'center', color: '#94A3B8' }}>
+              <Typography variant="body2">No sales items recorded yet. Create orders in POS to populate live metrics.</Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2.5}>
+              {displayTopItems.map((item) => (
+                <Box key={item.name}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                      {item.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: item.color }}>
+                      {item.count} sold (${Number(item.revenue).toFixed(2)})
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(item.count / maxItemCount) * 100}
+                    sx={{
+                      height: 10,
+                      borderRadius: 5,
+                      backgroundColor: '#F1F5F9',
+                      '& .MuiLinearProgress-bar': { backgroundColor: item.color, borderRadius: 5 },
+                    }}
+                  />
                 </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={(item.count / 50) * 100}
-                  sx={{
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: '#F1F5F9',
-                    '& .MuiLinearProgress-bar': { backgroundColor: item.color, borderRadius: 5 },
-                  }}
-                />
-              </Box>
-            ))}
-          </Stack>
+              ))}
+            </Stack>
+          )}
         </Card>
       </Box>
     </Box>
+    </AdminGuard>
   );
 }

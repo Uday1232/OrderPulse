@@ -1,13 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __prisma: PrismaClient | undefined;
-}
-
-export const prisma =
-  global.__prisma ||
+const createPrismaClient = () =>
   new PrismaClient({
     log: [
       { emit: 'event', level: 'error' },
@@ -15,11 +9,20 @@ export const prisma =
     ],
   });
 
-prisma.$on('error' as never, (e: unknown) => {
+type AppPrismaClient = ReturnType<typeof createPrismaClient>;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma: AppPrismaClient | undefined;
+}
+
+export const prisma = global.__prisma ?? createPrismaClient();
+
+prisma.$on('error', (e) => {
   logger.error('Prisma Error:', e);
 });
 
-prisma.$on('warn' as never, (e: unknown) => {
+prisma.$on('warn', (e) => {
   logger.warn('Prisma Warning:', e);
 });
 

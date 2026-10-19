@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { StoreService } from '../services/store.service';
-import { CreateStoreInput, CreateCategoryInput, CreateItemInput } from '../validators/store.schema';
+import { CreateStoreInput, UpdateStoreInput, CreateCategoryInput, CreateItemInput } from '../validators/store.schema';
 
 export class StoreController {
   static async getAllStores(_req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -23,6 +23,30 @@ export class StoreController {
         message: 'Store created successfully',
         data: store,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateStore(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { store_id } = req.params;
+      const store = await StoreService.updateStore(store_id!, req.body as UpdateStoreInput);
+      res.status(200).json({
+        success: true,
+        message: 'Store updated successfully',
+        data: store,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteStore(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { store_id } = req.params;
+      const result = await StoreService.deleteStore(store_id!);
+      res.status(200).json(result);
     } catch (error) {
       next(error);
     }
@@ -91,4 +115,37 @@ export class StoreController {
       next(error);
     }
   }
+
+  static async updateItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { store_id, item_id } = req.params;
+      const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+      const input = {
+        ...req.body,
+        ...(imageUrl ? { image_url: imageUrl } : {}),
+      };
+      const item = await StoreService.updateItem(store_id!, item_id!, input);
+      res.status(200).json({
+        success: true,
+        message: 'Item updated successfully',
+        data: item,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { store_id, item_id } = req.params;
+      const result = await StoreService.deleteItem(store_id!, item_id!);
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

@@ -7,6 +7,7 @@ import {
   Category,
   Item,
   User,
+  Role,
   PaymentMethod,
   PaymentStatus,
 } from '../types/order';
@@ -49,7 +50,7 @@ export class ApiService {
     name: string;
     email: string;
     password: string;
-    role?: 'ADMIN' | 'USER';
+    role?: Role;
   }): Promise<{ success: boolean; data: { token: string; user: User } }> {
     const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
       method: 'POST',
@@ -121,6 +122,48 @@ export class ApiService {
     return res.json();
   }
 
+  static async updateStore(
+    storeId: string,
+    data: {
+      name?: string;
+      location?: string;
+      is_active?: boolean;
+    }
+  ): Promise<{ success: boolean; data: Store; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/stores/${storeId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to update store: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async deleteStore(storeId: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/stores/${storeId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to delete store: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
   // ==========================================
   // DYNAMIC MENU & ITEM ENDPOINTS
   // ==========================================
@@ -161,6 +204,63 @@ export class ApiService {
 
     return res.json();
   }
+
+  static async updateStoreItem(
+    storeId: string,
+    itemId: string,
+    data:
+      | FormData
+      | {
+          name?: string;
+          price?: number;
+          description?: string;
+          category_id?: string;
+          category_name?: string;
+          rating?: number;
+          is_active?: boolean;
+        }
+  ): Promise<{ success: boolean; data: Item; message: string }> {
+    const authHeader = getAuthHeader();
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    const headers: Record<string, string> = { ...authHeader };
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const res = await fetch(`${API_BASE_URL}/api/v1/stores/${storeId}/items/${itemId}`, {
+      method: 'PATCH',
+      headers,
+      body: isFormData ? data : JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to update item: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async deleteStoreItem(
+    storeId: string,
+    itemId: string
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/stores/${storeId}/items/${itemId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to delete item: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
 
   // ==========================================
   // ORDER ENDPOINTS
@@ -268,6 +368,28 @@ export class ApiService {
     return res.json();
   }
 
+  static async getArchivableOrders(daysThreshold = 30): Promise<{
+    success: boolean;
+    data: Array<{ id: string; store_id: string; store?: { name: string }; total_amount: number; created_at: string }>;
+    totalArchivable: number;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/archive-old-orders?days_threshold=${daysThreshold}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch archivable orders: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
   static async archiveOldOrders(daysThreshold = 30): Promise<{
     success: boolean;
     data: { archivedCount: number; daysThreshold: number; timestamp: string };
@@ -285,6 +407,75 @@ export class ApiService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `Failed to archive orders: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async getUsers(): Promise<{
+    success: boolean;
+    data: Array<{ id: string; name: string; email: string; role: 'SUPERADMIN' | 'ADMIN' | 'USER'; created_at: string }>;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/users`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch users: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async createAdmin(data: { name?: string; email?: string; password?: string }): Promise<{
+    success: boolean;
+    data: {
+      user: { id: string; name: string; email: string; role: 'ADMIN' | 'SUPERADMIN' };
+      credentials: { email: string; plainPassword: string };
+    };
+    message: string;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/admins`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to create admin: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async updateUserRole(
+    userId: string,
+    role: 'SUPERADMIN' | 'ADMIN' | 'USER'
+  ): Promise<{
+    success: boolean;
+    data: { id: string; name: string; email: string; role: 'SUPERADMIN' | 'ADMIN' | 'USER' };
+    message: string;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ role }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to update user role: HTTP ${res.status}`);
     }
 
     return res.json();

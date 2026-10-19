@@ -1,9 +1,10 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../config/db';
+import { RedisService } from '../services/redis.service';
 import { logger } from '../utils/logger';
 
 async function seed() {
-  logger.info('Starting database seed for Restaurant POS Platform...');
+  logger.info('Starting database seed with 4 Western Stores, perfectly matched photos & menus, and Real-Time Analytics...');
 
   // 1. Clean existing records in correct foreign key order
   await prisma.orderArchive.deleteMany({});
@@ -15,14 +16,50 @@ async function seed() {
 
   logger.info('Cleared existing database records');
 
-  // 2. Create Users (Admin & User)
+  // 2. Create Users (SuperAdmin, Store Admins, and Customers)
   const passwordHash = await bcrypt.hash('admin123', 10);
   const userPasswordHash = await bcrypt.hash('user123', 10);
 
-  const admin = await prisma.user.create({
+  const superAdmin = await prisma.user.create({
     data: {
-      name: 'StorePulse Admin',
+      name: 'StorePulse SuperAdmin',
       email: 'admin@storepulse.com',
+      password_hash: passwordHash,
+      role: 'SUPERADMIN',
+    },
+  });
+
+  const admin1 = await prisma.user.create({
+    data: {
+      name: 'Central Bistro Manager',
+      email: 'central_admin@storepulse.com',
+      password_hash: passwordHash,
+      role: 'ADMIN',
+    },
+  });
+
+  const admin2 = await prisma.user.create({
+    data: {
+      name: 'Uptown Grill Manager',
+      email: 'uptown_admin@storepulse.com',
+      password_hash: passwordHash,
+      role: 'ADMIN',
+    },
+  });
+
+  const admin3 = await prisma.user.create({
+    data: {
+      name: 'Suburban House Manager',
+      email: 'suburban_admin@storepulse.com',
+      password_hash: passwordHash,
+      role: 'ADMIN',
+    },
+  });
+
+  const admin4 = await prisma.user.create({
+    data: {
+      name: 'Metro Express Manager',
+      email: 'metro_admin@storepulse.com',
       password_hash: passwordHash,
       role: 'ADMIN',
     },
@@ -37,205 +74,408 @@ async function seed() {
     },
   });
 
-  logger.info(`Seeded Admin (${admin.email}) and User (${regularUser.email})`);
+  const regularUser2 = await prisma.user.create({
+    data: {
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@example.com',
+      password_hash: userPasswordHash,
+      role: 'USER',
+    },
+  });
 
-  // 3. Create Stores
+  logger.info(`Seeded SuperAdmin (${superAdmin.email}), Store Admins, and Customers successfully`);
+
+  // 3. Define 4 Distinct Western Stores with 1-2 items per category matching photos 100%
   const storesData = [
-    { name: 'Central Cafe & Bistro', location: '101 Main St, Downtown' },
-    { name: 'Uptown Pizzeria & Grill', location: '404 High St, Uptown' },
-    { name: 'Suburban Gourmet House', location: '707 Oak Ave, Suburbia' },
+    {
+      name: 'Central Cafe & Bistro',
+      location: '101 Downtown Boulevard, Central District',
+      adminId: admin1.id,
+      categories: [
+        {
+          name: 'Main Menu',
+          items: [
+            {
+              name: 'Classic Margherita Veg. Pizza',
+              description: 'Stone-baked thin crust pizza topped with fresh mozzarella cheese, sun-ripened tomatoes, and aromatic sweet basil.',
+              price: 15.50,
+              rating: 4.9,
+              image_url: '/images/food/pizza.jpg',
+            },
+            {
+              name: 'Grilled Italian Club Sandwich',
+              description: 'Triple-decker artisan toasted sandwich layered with crisp garden vegetables, melted cheddar, and herb aioli.',
+              price: 12.00,
+              rating: 4.8,
+              image_url: '/images/food/sandwich.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Appetizer',
+          items: [
+            {
+              name: 'Crispy Cheddar Bacon Burger',
+              description: 'Juicy prime patty with melted aged cheddar, crisp lettuce, tomato slices, and secret sauce on a toasted brioche bun.',
+              price: 14.50,
+              rating: 4.8,
+              image_url: '/images/food/burger.jpg',
+            },
+            {
+              name: 'Golden Salted French Fries',
+              description: 'Crispy skin-on golden potato fries seasoned with fine Himalayan sea salt, served with garlic mayo dip.',
+              price: 5.50,
+              rating: 4.7,
+              image_url: '/images/food/fries.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Beverages',
+          items: [
+            {
+              name: 'Artisanal Hot Cappuccino',
+              description: 'Freshly roasted espresso shot topped with velvety steamed milk foam and delicate barista latte art.',
+              price: 4.50,
+              rating: 4.9,
+              image_url: '/images/food/coffee.jpg',
+            },
+            {
+              name: 'Iced Peach Lemon Tea',
+              description: 'Refreshing chilled organic black tea infused with sweet peach syrup and fresh lemon slices.',
+              price: 4.00,
+              rating: 4.6,
+              image_url: '/images/food/coffee.jpg',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Uptown Pizzeria & Grill',
+      location: '404 High Street, Uptown District',
+      adminId: admin2.id,
+      categories: [
+        {
+          name: 'Main Menu',
+          items: [
+            {
+              name: 'Pepperoni & Mozzarella Pizza',
+              description: 'Traditional wood-fired crust loaded with spicy cured beef pepperoni, rich tomato marinara, and double mozzarella.',
+              price: 17.50,
+              rating: 4.9,
+              image_url: '/images/food/pizza.jpg',
+            },
+            {
+              name: 'Toasted Submarine Sandwich',
+              description: 'Crisp submarine hoagie filled with seasoned garden veggies, melted provolone cheese, and house vinaigrette.',
+              price: 11.50,
+              rating: 4.7,
+              image_url: '/images/food/sub_sandwich.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Appetizer',
+          items: [
+            {
+              name: 'Smoky BBQ Double Burger',
+              description: 'Two flame-grilled patties basted in sweet hickory BBQ sauce, topped with crispy onion rings and melted cheese.',
+              price: 15.00,
+              rating: 4.9,
+              image_url: '/images/food/burger.jpg',
+            },
+            {
+              name: 'Crispy Peri Peri French Fries',
+              description: 'Hot crunchy french fries tossed in zesty peri-peri chili paprika seasoning with creamy cheese dip.',
+              price: 6.00,
+              rating: 4.8,
+              image_url: '/images/food/fries.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Beverages',
+          items: [
+            {
+              name: 'Vanilla Latte Hot-Coffee',
+              description: 'Smooth espresso blended with steamed milk and Madagascar vanilla syrup, lightly dusted with cinnamon.',
+              price: 5.00,
+              rating: 4.8,
+              image_url: '/images/food/coffee.jpg',
+            },
+            {
+              name: 'Cold Brew Ice-Tea',
+              description: 'Slow-steeped cold brew black tea served over crystal ice with fresh mint sprigs and citrus twist.',
+              price: 4.50,
+              rating: 4.7,
+              image_url: '/images/food/coffee.jpg',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Suburban Gourmet House',
+      location: '707 Oak Avenue, West End Suburbs',
+      adminId: admin3.id,
+      categories: [
+        {
+          name: 'Main Menu',
+          items: [
+            {
+              name: 'Truffle Mushroom Veg. Pizza',
+              description: 'Gourmet white sauce pizza topped with sautéed cremini mushrooms, truffle oil drizzle, and fresh oregano.',
+              price: 18.00,
+              rating: 4.9,
+              image_url: '/images/food/pizza.jpg',
+            },
+            {
+              name: 'Avocado Club Veg. Sandwich',
+              description: 'Fresh sliced Haas avocado, ripe tomatoes, crisp cucumber, and cheddar cheese on whole grain toasted sourdough.',
+              price: 13.00,
+              rating: 4.8,
+              image_url: '/images/food/sandwich.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Appetizer',
+          items: [
+            {
+              name: 'Melted Swiss Mushroom Burger',
+              description: 'Savory grilled patty smothered with buttered mushrooms and melted Swiss cheese on toasted sesame seed bun.',
+              price: 14.00,
+              rating: 4.7,
+              image_url: '/images/food/burger.jpg',
+            },
+            {
+              name: 'Seasoned Curly French Fries',
+              description: 'Golden spiral-cut curly fries seasoned with garlic salt, onion powder, and paprika.',
+              price: 6.50,
+              rating: 4.8,
+              image_url: '/images/food/fries.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Beverages',
+          items: [
+            {
+              name: 'Caramel Macchiato Hot-Coffee',
+              description: 'Freshly steamed milk with vanilla-flavored syrup marked with espresso and topped with caramel drizzle.',
+              price: 5.50,
+              rating: 4.9,
+              image_url: '/images/food/coffee.jpg',
+            },
+            {
+              name: 'Classic Iced Lemon Tea',
+              description: 'Crisp brewed Ceylon black tea shaken with ice, pure cane sugar, and freshly squeezed lemon juice.',
+              price: 4.00,
+              rating: 4.7,
+              image_url: '/images/food/coffee.jpg',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Metro Deli & Express',
+      location: '50 Grand Central Avenue, Financial District',
+      adminId: admin4.id,
+      categories: [
+        {
+          name: 'Main Menu',
+          items: [
+            {
+              name: 'Four Cheese Crisp Pizza',
+              description: 'Crisp rustic thin crust layered with rich mozzarella, sharp parmesan, provolone, and creamy ricotta.',
+              price: 16.50,
+              rating: 4.8,
+              image_url: '/images/food/pizza.jpg',
+            },
+            {
+              name: 'Classic Deli Submarine Sandwich',
+              description: 'Authentic 9-inch toasted submarine roll filled with sliced cheddar, roasted peppers, and basil pesto spread.',
+              price: 12.50,
+              rating: 4.7,
+              image_url: '/images/food/sub_sandwich.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Appetizer',
+          items: [
+            {
+              name: 'Veg. Mania Crunch Burger',
+              description: 'Crispy seasoned vegetable patty with fresh lettuce, sliced tomatoes, pickle chips, and special burger relish.',
+              price: 13.50,
+              rating: 4.8,
+              image_url: '/images/food/burger.jpg',
+            },
+            {
+              name: 'Loaded Cheesy French Fries',
+              description: 'Basket of hot crispy french fries smothered with melted warm cheddar cheese sauce and chopped green scallions.',
+              price: 7.00,
+              rating: 4.9,
+              image_url: '/images/food/fries.jpg',
+            },
+          ],
+        },
+        {
+          name: 'Beverages',
+          items: [
+            {
+              name: 'Dark Roasted Espresso Coffee',
+              description: 'Double shot of dark Italian roast espresso with rich crema and bold, aromatic notes of dark chocolate.',
+              price: 4.00,
+              rating: 4.8,
+              image_url: '/images/food/coffee.jpg',
+            },
+            {
+              name: 'Berry Hibiscus Ice-Tea',
+              description: 'Tart and refreshing botanical iced tea infused with dried hibiscus petals and sweet summer berries.',
+              price: 4.50,
+              rating: 4.8,
+              image_url: '/images/food/coffee.jpg',
+            },
+          ],
+        },
+      ],
+    },
   ];
 
-  const stores = [];
-  for (const s of storesData) {
+  // 4. Create Stores, Categories, and Items in Database
+  interface CreatedStoreEntry {
+    store: { id: string; name: string };
+    items: Array<{ id: string; name: string; price: number }>;
+  }
+
+  const createdStores: CreatedStoreEntry[] = [];
+
+  for (const sData of storesData) {
     const store = await prisma.store.create({
       data: {
-        name: s.name,
-        location: s.location,
-        admin_id: admin.id,
+        name: sData.name,
+        location: sData.location,
+        admin_id: sData.adminId,
       },
     });
-    stores.push(store);
-  }
 
-  logger.info(`Seeded ${stores.length} stores`);
+    const storeItemsList: Array<{ id: string; name: string; price: number }> = [];
 
-  // 4. Create Categories & Menu Items for each store
-  const categoryNames = ['Main Menu', 'Appetizer', 'Beverages'];
-
-  const foodCatalog = [
-    // Main Menu
-    {
-      name: 'Veg. Mania Burger with lettuce',
-      category: 'Main Menu',
-      price: 16.36,
-      rating: 4.8,
-      description: 'A delicious vegetarian burger with fresh green lettuce, melted cheddar cheese, tomato slice, and golden sesame seed bun.',
-      image_url: '/images/food/burger.jpg',
-    },
-    {
-      name: 'Mexican Patty With Veg. Sammi',
-      category: 'Main Menu',
-      price: 8.28,
-      rating: 4.6,
-      description: 'Toasted submarine sandwich with spiced Mexican vegetable patty, cucumber, melted mozzarella, and tangy herb dressing.',
-      image_url: '/images/food/sub_sandwich.jpg',
-    },
-    {
-      name: 'Italian Veg. Sandwich Classic',
-      category: 'Main Menu',
-      price: 16.54,
-      rating: 4.9,
-      description: 'This delectable creation features a medley of fresh, garden-fresh vegetables, savory herbs, and zesty condiments, all nestled between perfectly toasted artisanal bread.',
-      image_url: '/images/food/sandwich.jpg',
-    },
-    {
-      name: 'Turkish Cuisine Pizza',
-      category: 'Main Menu',
-      price: 22.54,
-      rating: 4.7,
-      description: 'Crispy stone-baked pizza slice with succulent Mediterranean toppings, sun-ripened cherry tomatoes, fresh basil, and mozzarella.',
-      image_url: '/images/food/pizza.jpg',
-    },
-    // Appetizers
-    {
-      name: 'Crispy French Fries',
-      category: 'Appetizer',
-      price: 5.99,
-      rating: 4.8,
-      description: 'Golden crispy skin-on potatoes seasoned with fine Himalayan sea salt and served with house dips.',
-      image_url: '/images/food/fries.jpg',
-    },
-    {
-      name: 'Garlic Butter Knots',
-      category: 'Appetizer',
-      price: 6.50,
-      rating: 4.6,
-      description: 'Oven-baked dough knots brushed with roasted garlic butter, parsley, and parmesan cheese.',
-      image_url: '/images/food/sandwich.jpg',
-    },
-    // Beverages
-    {
-      name: 'Artisanal Hot Cappuccino',
-      category: 'Beverages',
-      price: 4.50,
-      rating: 4.9,
-      description: 'Freshly roasted espresso with velvety steamed milk foam and delicate latte art.',
-      image_url: '/images/food/coffee.jpg',
-    },
-    {
-      name: 'Iced Peach Lemon Tea',
-      category: 'Beverages',
-      price: 4.99,
-      rating: 4.7,
-      description: 'Chilled organic black tea infused with sweet white peach syrup and fresh lemon slices.',
-      image_url: '/images/food/coffee.jpg',
-    },
-  ];
-
-  for (const store of stores) {
-    const createdCategories: Record<string, string> = {};
-
-    for (const catName of categoryNames) {
+    for (const catData of sData.categories) {
       const cat = await prisma.category.create({
         data: {
-          name: catName,
+          name: catData.name,
           store_id: store.id,
         },
       });
-      createdCategories[catName] = cat.id;
+
+      for (const itemData of catData.items) {
+        const item = await prisma.item.create({
+          data: {
+            name: itemData.name,
+            description: itemData.description,
+            price: itemData.price,
+            rating: itemData.rating,
+            image_url: itemData.image_url,
+            category_id: cat.id,
+            store_id: store.id,
+          },
+        });
+        storeItemsList.push({ id: item.id, name: item.name, price: item.price });
+      }
     }
 
-    for (const food of foodCatalog) {
-      const catId = createdCategories[food.category]!;
-      await prisma.item.create({
-        data: {
-          name: food.name,
-          description: food.description,
-          price: food.price,
-          rating: food.rating,
-          image_url: food.image_url,
-          category_id: catId,
-          store_id: store.id,
-        },
-      });
-    }
+    createdStores.push({ store, items: storeItemsList });
   }
 
-  logger.info('Seeded dynamic categories and menu items with photos across all stores');
+  logger.info(`Seeded 4 Western Stores with 24 items matching pictures 100%`);
 
-  // 5. Seed Orders (Recent & Archived)
+  // 5. Seed Orders (Chronologically across past 7 days for live analytics charts)
   const now = new Date();
-  const paymentMethods: Array<'CASH' | 'CARD' | 'UPI'> = ['CARD', 'UPI', 'CASH'];
-  const statuses: Array<'PLACED' | 'PREPARED' | 'PENDING' | 'CANCELLED'> = ['PREPARED', 'PLACED', 'PREPARED', 'PENDING'];
+  const paymentMethods: Array<'CASH' | 'CARD' | 'UPI'> = ['CARD', 'CARD', 'UPI', 'CASH'];
+  let totalOrderCount = 0;
 
-  let orderCountTotal = 0;
+  for (const storeRecord of createdStores) {
+    const storeItems = storeRecord.items;
+    if (storeItems.length === 0) continue;
 
-  for (const store of stores) {
-    for (let dayOffset = 0; dayOffset < 10; dayOffset++) {
-      const orderDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-      const ordersPerDay = 3 + (dayOffset % 3);
+    // Distribute orders across 7 days (day 6 down to day 0 = today)
+    for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
+      const orderDay = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+      const ordersForDay = dayOffset === 0 ? 3 : 2 + (dayOffset % 2);
 
-      for (let i = 0; i < ordersPerDay; i++) {
-        const item1 = foodCatalog[(i + dayOffset) % foodCatalog.length]!;
-        const item2 = foodCatalog[(i + dayOffset + 2) % foodCatalog.length]!;
+      for (let i = 0; i < ordersForDay; i++) {
+        const itemA = storeItems[i % storeItems.length]!;
+        const itemB = storeItems[(i + 1) % storeItems.length]!;
 
-        const qty1 = 1 + (i % 2);
-        const qty2 = 1 + ((i + 1) % 3);
-        const sub1 = Math.round(qty1 * item1.price * 100) / 100;
-        const sub2 = Math.round(qty2 * item2.price * 100) / 100;
+        const qtyA = 1 + (i % 2);
+        const qtyB = 1;
+        const subA = Math.round(qtyA * itemA.price * 100) / 100;
+        const subB = Math.round(qtyB * itemB.price * 100) / 100;
 
-        const items = [
-          { item_id: `item-${i}-1`, name: item1.name, qty: qty1, quantity: qty1, price: item1.price, unit_price: item1.price, subtotal: sub1 },
-          { item_id: `item-${i}-2`, name: item2.name, qty: qty2, quantity: qty2, price: item2.price, unit_price: item2.price, subtotal: sub2 },
+        const orderItems = [
+          {
+            item_id: itemA.id,
+            name: itemA.name,
+            qty: qtyA,
+            quantity: qtyA,
+            price: itemA.price,
+            unit_price: itemA.price,
+            subtotal: subA,
+          },
+          {
+            item_id: itemB.id,
+            name: itemB.name,
+            qty: qtyB,
+            quantity: qtyB,
+            price: itemB.price,
+            unit_price: itemB.price,
+            subtotal: subB,
+          },
         ];
 
-        const totalAmount = Math.round((sub1 + sub2) * 100) / 100;
+        const totalAmount = Math.round((subA + subB) * 100) / 100;
         const paymentMethod = paymentMethods[(i + dayOffset) % paymentMethods.length]!;
-        const status = statuses[(i + dayOffset) % statuses.length]!;
+
+        // Realistic order status distribution
+        let status: 'PLACED' | 'PENDING' | 'PREPARED' = 'PREPARED';
+        if (dayOffset === 0) {
+          // Today's orders have active statuses for immediate live testing!
+          status = i === 0 ? 'PLACED' : i === 1 ? 'PENDING' : 'PREPARED';
+        }
+
         const paymentStatus = paymentMethod === 'CASH' && status === 'PENDING' ? 'PENDING' : 'COMPLETED';
+        const createdAt = new Date(orderDay.getTime() + (i * 3 + 10) * 3600000);
 
         await prisma.order.create({
           data: {
-            store_id: store.id,
-            user_id: i % 2 === 0 ? regularUser.id : null,
-            items,
+            store_id: storeRecord.store.id,
+            user_id: i % 2 === 0 ? regularUser.id : regularUser2.id,
+            items: orderItems,
             total_amount: totalAmount,
             status,
             payment_method: paymentMethod,
             payment_status: paymentStatus,
-            created_at: new Date(orderDate.getTime() + i * 1800000),
+            created_at: createdAt,
           },
         });
-        orderCountTotal++;
+        totalOrderCount++;
       }
-    }
-
-    // Add 4 older orders (45 days ago) to test archival
-    const oldDate = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
-    for (let i = 0; i < 4; i++) {
-      const item = foodCatalog[i % foodCatalog.length]!;
-      const totalAmount = Math.round(item.price * 2 * 100) / 100;
-      await prisma.order.create({
-        data: {
-          store_id: store.id,
-          user_id: regularUser.id,
-          items: [
-            { item_id: `old-${i}`, name: item.name, qty: 2, quantity: 2, price: item.price, unit_price: item.price, subtotal: totalAmount },
-          ],
-          total_amount: totalAmount,
-          status: 'PREPARED',
-          payment_method: 'CARD',
-          payment_status: 'COMPLETED',
-          created_at: new Date(oldDate.getTime() + i * 3600000),
-        },
-      });
-      orderCountTotal++;
     }
   }
 
-  logger.info(`Successfully seeded ${orderCountTotal} orders across ${stores.length} stores`);
-  logger.info('Database seed complete!');
+  // 6. Invalidate all Redis caches for instant real-time sync
+  await Promise.all([
+    RedisService.invalidatePattern('menu:*'),
+    RedisService.invalidatePattern('orders:*'),
+    RedisService.invalidatePattern('analytics:*'),
+  ]);
+
+  logger.info(`Successfully seeded ${totalOrderCount} orders across all 4 Western stores`);
+  logger.info('Database seed complete and Redis caches refreshed!');
 }
 
 seed()

@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'USER';
+export type Role = 'SUPERADMIN' | 'ADMIN' | 'USER';
 
 export type OrderStatus = 'PENDING' | 'PLACED' | 'PREPARED' | 'CANCELLED' | 'PREPARING' | 'COMPLETED';
 
@@ -18,8 +18,14 @@ export interface Store {
   id: string;
   name: string;
   location: string;
+  is_active?: boolean;
   admin_id?: string;
   created_at?: string;
+  _count?: {
+    order?: number;
+    item?: number;
+    category?: number;
+  };
 }
 
 export interface Category {
@@ -38,6 +44,7 @@ export interface Item {
   rating?: number;
   category_id: string;
   store_id: string;
+  is_active?: boolean;
   created_at?: string;
   category?: {
     id: string;
@@ -87,6 +94,7 @@ export interface DailyOrderStat {
 
 export interface StoreRevenueStat {
   store_id: string;
+  store_name?: string;
   total_orders: number;
   total_revenue: number;
   avg_order_value: number;

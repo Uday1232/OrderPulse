@@ -45,4 +45,26 @@ export class ArchiveService {
       timestamp: new Date().toISOString(),
     };
   }
+
+  /**
+   * Get orders eligible for archival (older than daysThreshold days)
+   */
+  static async getArchivableOrders(daysThreshold = 30) {
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - daysThreshold);
+
+    return prisma.order.findMany({
+      where: {
+        created_at: {
+          lt: thresholdDate,
+        },
+      },
+      include: {
+        store: { select: { id: true, name: true } },
+      },
+      orderBy: { created_at: 'asc' },
+      take: 50,
+    });
+  }
 }
+
