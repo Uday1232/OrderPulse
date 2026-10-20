@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { ThemeRegistry } from '../theme/ThemeRegistry';
 import { QueryClientProvider } from '../context/QueryClientProvider';
 import { SocketProvider } from '../context/SocketContext';
@@ -9,6 +9,12 @@ import { RealtimeAlert } from '../components/RealtimeAlert';
 export const metadata: Metadata = {
   title: 'StorePulse POS - Multi-Store Restaurant Order Management',
   description: 'Production-ready restaurant POS platform and multi-store management system with real-time tracking, Redis caching, and analytics.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
