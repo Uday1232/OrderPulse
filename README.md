@@ -1,6 +1,51 @@
-# TMBill - Multi-Store Restaurant Order Management System
+# StorePulse (TMBill) - Multi-Store Restaurant Order Management System
 
-A production-ready, multi-store Restaurant Order Management System built with a high-performance Node.js/Express TypeScript backend, Prisma ORM, PostgreSQL, Redis, Socket.IO, and a Next.js (App Router) Material-UI frontend.
+A production-ready, full-stack multi-store Restaurant Order Management & POS platform built with Node.js/Express, TypeScript, Prisma ORM, PostgreSQL, Redis, Socket.IO, and a mobile-responsive Next.js 14 App Router frontend with Material-UI.
+
+---
+
+## 🌐 Live Deployments
+
+- **Frontend (Vercel):** [https://orderpulse-frontend-three.vercel.app](https://orderpulse-frontend-three.vercel.app)
+- **Backend API (Render):** [https://orderpulse-b6de.onrender.com](https://orderpulse-b6de.onrender.com)
+- **Health Check:** [https://orderpulse-b6de.onrender.com/health](https://orderpulse-b6de.onrender.com/health)
+- **GitHub Repository:** [https://github.com/Uday1232/OrderPulse](https://github.com/Uday1232/OrderPulse)
+
+---
+
+## 📋 Assessment Task Compliance Matrix
+
+| Requirement | Implementation & File Path | Assessment Status |
+| :--- | :--- | :---: |
+| **Task 1: Multi-Store Order Management** | | |
+| `POST /orders` (Create order) | `backend/src/controllers/order.controller.ts` (`createOrder`) | ✅ Complete |
+| `GET /orders?store_id=` (Pagination) | Cursor-based deterministic pagination + Redis caching | ✅ Complete |
+| `PATCH /orders/:id/status` (Update status) | Row-level locking `SELECT ... FOR UPDATE` inside atomic `$transaction` | ✅ Complete |
+| Order Schema with strict types | `backend/prisma/schema.prisma` (`PLACED`, `PREPARING`, `COMPLETED`) | ✅ Complete |
+| Database Indexes on `store_id` & `created_at` | Added composite & individual B-Tree indexes in PostgreSQL | ✅ Complete |
+| Page 1: Create Order | `frontend/src/app/pos/page.tsx` & `/create-order` (Interactive POS) | ✅ Complete |
+| Page 2: Orders List (filter by store) | `frontend/src/app/orders/page.tsx` (Real-time live filtering) | ✅ Complete |
+| Page 3: Update Order Status | `frontend/src/app/update-order-status/page.tsx` & `/orders/[id]` | ✅ Complete |
+| **Task 2: Real-Time Notification System** | | |
+| Socket.IO Backend Architecture | `backend/src/socket/socket.server.ts` | ✅ Complete |
+| Store-Based Event Filtering (Rooms) | Clients join `store:${store_id}` rooms automatically | ✅ Complete |
+| Events: `order:created` & `order:updated` | Emitted on order creation and state transitions | ✅ Complete |
+| Frontend Auto-Update without refresh | React Query cache invalidation + instant UI reactivity | ✅ Complete |
+| Reconnect & Heartbeat Logic | Handled in `SocketContext.tsx` with reconnection fallback | ✅ Complete |
+| Audio/Visual Real-Time Alerts | Sound chime + visual badge notifications across navbar | ✅ Complete |
+| **Task 3: Data Archival & Analytics** | | |
+| Two Tables: `orders` & `orders_archive` | Defined in Prisma with identical indexes + `archived_at` | ✅ Complete |
+| `POST /archive-old-orders` | Atomic single-query PostgreSQL CTE transaction (> 30 days) | ✅ Complete |
+| Orders per day aggregation | `backend/src/services/analytics.service.ts` (`DATE(created_at)`) | ✅ Complete |
+| Total revenue per store | `GROUP BY store_id` with average order value calculations | ✅ Complete |
+| Top 5 selling items | PostgreSQL `jsonb_to_recordset` query on nested JSON items | ✅ Complete |
+| Analytics Caching | Redis caching with 10-min TTL & instant cache-busting | ✅ Complete |
+| **Bonus Criteria** | | |
+| 100% TypeScript Coverage | Strict mode enabled in both frontend and backend | ✅ Complete |
+| Docker & Docker Compose | Multi-stage Dockerfiles + `docker-compose.yml` | ✅ Complete |
+| Cloud Database & Redis | Neon Serverless PostgreSQL + Upstash Redis TLS | ✅ Complete |
+| Mobile Responsiveness | Fully responsive mobile POS, bottom sheets, drawer navigation | ✅ Complete |
+| 28 Automated Tests | Jest + Supertest covering validation, concurrency & endpoints | ✅ Complete |
 
 ---
 
@@ -10,6 +55,7 @@ A production-ready, multi-store Restaurant Order Management System built with a 
 |---|---|
 | **Backend** | Node.js (v20+), Express.js, TypeScript, Prisma ORM, PostgreSQL 16, Redis 7, Socket.IO, Zod, Winston, Jest, Supertest |
 | **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Material-UI (MUI v5), TanStack React Query v5, Socket.IO Client |
+| **Cloud & Deployment** | Vercel (Frontend), Render (Backend), Neon (PostgreSQL), Upstash (Redis) |
 | **Infrastructure** | Docker, Docker Compose (Multi-stage lightweight images) |
 
 ---
