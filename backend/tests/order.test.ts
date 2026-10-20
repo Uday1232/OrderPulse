@@ -36,16 +36,19 @@ describe('Order Management Endpoints (Integration)', () => {
     });
     testStoreId = store.id;
 
-    // Login as admin to get token
-    const loginRes = await request(app)
-      .post('/api/v1/auth/register')
-      .send({
-        name: 'Order Test Admin 2',
-        email: `admin-order-${Date.now()}@test.com`,
-        password: 'password123',
-        role: 'ADMIN',
-      });
-    adminToken = loginRes.body.data.token;
+    // Generate valid admin token
+    const jwt = await import('jsonwebtoken');
+    const { env } = await import('../src/config/env');
+    adminToken = jwt.default.sign(
+      {
+        id: admin.id,
+        email: admin.email,
+        role: admin.role,
+        name: admin.name,
+      },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
   });
 
   afterAll(async () => {

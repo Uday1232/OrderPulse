@@ -19,7 +19,7 @@ export const CreateAdminSchema = z.object({
 });
 
 export const UpdateUserRoleSchema = z.object({
-  role: z.enum(['SUPERADMIN', 'ADMIN', 'USER']),
+  role: z.enum(['ADMIN', 'USER']),
 });
 
 export type RegisterInput = z.infer<typeof RegisterSchema>;

@@ -110,13 +110,18 @@ export default function UserManagementPage() {
   }, []);
 
   const handleToggleRole = async (targetUser: UserRecord) => {
+    if (currentUser?.role !== 'SUPERADMIN') {
+      setErrorMsg('Access denied. Only SuperAdmin can modify user roles.');
+      return;
+    }
+
     if (targetUser.id === currentUser?.id) {
       setErrorMsg('You cannot change your own active admin session.');
       return;
     }
 
-    if (targetUser.role === 'SUPERADMIN' && currentUser?.role !== 'SUPERADMIN') {
-      setErrorMsg('Only Superadmin can modify another Superadmin account.');
+    if (targetUser.role === 'SUPERADMIN') {
+      setErrorMsg('Superadmin account is protected and cannot be modified.');
       return;
     }
 
@@ -134,6 +139,11 @@ export default function UserManagementPage() {
   };
 
   const handleCreateAdmin = async () => {
+    if (currentUser?.role !== 'SUPERADMIN') {
+      setErrorMsg('Access denied. Only SuperAdmin can create Store Admin accounts.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg(null);
 
@@ -196,7 +206,9 @@ export default function UserManagementPage() {
                 )}
               </Box>
               <Typography variant="body2" sx={{ color: '#64748B', mt: 0.5 }}>
-                Create store administrators with auto-generated credentials and control access permissions.
+                {currentUser?.role === 'SUPERADMIN'
+                  ? 'Only you as SuperAdmin can create store administrators and assign administrative privileges.'
+                  : 'Store staff & customer directory (SuperAdmin authorization required to create admins or change roles).'}
               </Typography>
             </Box>
 
@@ -216,22 +228,24 @@ export default function UserManagementPage() {
               >
                 Refresh
               </Button>
-              <Button
-                onClick={handleOpenAddModal}
-                variant="contained"
-                startIcon={<PersonAddIcon />}
-                sx={{
-                  backgroundColor: '#0F172A',
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  borderRadius: '12px',
-                  px: 2.5,
-                  textTransform: 'none',
-                  '&:hover': { backgroundColor: '#1E293B' },
-                }}
-              >
-                + Add Store Admin
-              </Button>
+              {currentUser?.role === 'SUPERADMIN' && (
+                <Button
+                  onClick={handleOpenAddModal}
+                  variant="contained"
+                  startIcon={<PersonAddIcon />}
+                  sx={{
+                    backgroundColor: '#0F172A',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    borderRadius: '12px',
+                    px: 2.5,
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#1E293B' },
+                  }}
+                >
+                  + Add Store Admin
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -392,9 +406,9 @@ export default function UserManagementPage() {
                             </Typography>
                           ) : isSuper ? (
                             <Typography variant="caption" sx={{ color: '#4338CA', fontWeight: 700 }}>
-                              Protected Master
+                              Protected SuperAdmin
                             </Typography>
-                          ) : (
+                          ) : currentUser?.role === 'SUPERADMIN' ? (
                             <Tooltip title={isAdmin ? 'Demote to regular Customer' : 'Promote to Store Admin'}>
                               <Button
                                 size="small"
@@ -418,6 +432,10 @@ export default function UserManagementPage() {
                                 {isAdmin ? 'Demote to Customer' : '👑 Make Admin'}
                               </Button>
                             </Tooltip>
+                          ) : (
+                            <Typography variant="caption" sx={{ color: '#94A3B8', fontStyle: 'italic' }}>
+                              Read Only
+                            </Typography>
                           )}
                         </TableCell>
                       </TableRow>

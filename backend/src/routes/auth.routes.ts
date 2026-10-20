@@ -27,11 +27,11 @@ router.get(
   AuthController.me
 );
 
-// POST /auth/admins - Create a new Store Admin with auto-generated credentials (Admin / Superadmin only)
+// POST /auth/admins - Create a new Store Admin with auto-generated credentials (SUPERADMIN only)
 router.post(
   '/admins',
   authenticate,
-  authorizeRoles('ADMIN'),
+  authorizeRoles('SUPERADMIN'),
   validateRequest({ body: CreateAdminSchema }),
   AuthController.createAdmin
 );
@@ -44,11 +44,11 @@ router.get(
   AuthController.getAllUsers
 );
 
-// PATCH /auth/users/:id/role - Promote/Demote user role (Admin / Superadmin only)
+// PATCH /auth/users/:id/role - Promote/Demote user role (SUPERADMIN only)
 router.patch(
   '/users/:id/role',
   authenticate,
-  authorizeRoles('ADMIN'),
+  authorizeRoles('SUPERADMIN'),
   validateRequest({ body: UpdateUserRoleSchema }),
   AuthController.updateUserRole
 );

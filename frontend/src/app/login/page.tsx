@@ -14,9 +14,6 @@ import {
   IconButton,
   Alert,
   CircularProgress,
-  Stack,
-  Divider,
-  Chip,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -112,21 +109,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
-  const handleFillDemo = (type: 'SUPERADMIN' | 'ADMIN' | 'USER') => {
-    setIsRegistering(false);
-    if (type === 'SUPERADMIN') {
-      setEmail('admin@storepulse.com');
-      setPassword('admin123');
-    } else if (type === 'ADMIN') {
-      setEmail('central_admin@storepulse.com');
-      setPassword('admin123');
-    } else {
-      setEmail('user@storepulse.com');
-      setPassword('user123');
-    }
-  };
-
 
   return (
     <Box
@@ -327,7 +309,7 @@ export default function LoginPage() {
               <TextField
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={isRegistering ? 'john@example.com' : 'admin@storepulse.com'}
+                placeholder={isRegistering ? 'john@example.com' : 'you@example.com'}
                 type="email"
                 fullWidth
                 size="small"
@@ -437,71 +419,6 @@ export default function LoginPage() {
               )}
             </Button>
           </Box>
-
-          {!isRegistering && (
-            <>
-              <Divider sx={{ my: 3 }}>
-                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600 }}>
-                  QUICK LOGIN PRESETS
-                </Typography>
-              </Divider>
-
-              {/* Quick Fill Demo Accounts */}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                <Button
-                  onClick={() => handleFillDemo('SUPERADMIN')}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: '10px',
-                    borderColor: '#E2E8F0',
-                    color: '#4F46E5',
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    py: 0.9,
-                    '&:hover': { borderColor: '#4F46E5', backgroundColor: '#EEF2FF' },
-                  }}
-                >
-                  👑 SuperAdmin
-                </Button>
-                <Button
-                  onClick={() => handleFillDemo('ADMIN')}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: '10px',
-                    borderColor: '#E2E8F0',
-                    color: '#0F172A',
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    py: 0.9,
-                    '&:hover': { borderColor: '#0F172A', backgroundColor: '#F1F5F9' },
-                  }}
-                >
-                  🛡️ Admin
-                </Button>
-                <Button
-                  onClick={() => handleFillDemo('USER')}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: '10px',
-                    borderColor: '#E2E8F0',
-                    color: '#EA580C',
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    py: 0.9,
-                    '&:hover': { borderColor: '#FF7A00', backgroundColor: '#FFF7ED' },
-                  }}
-                >
-                  👤 Customer
-                </Button>
-              </Stack>
-            </>
-          )}
         </Box>
       </Box>
     </Box>

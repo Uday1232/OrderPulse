@@ -26,37 +26,73 @@ describe('Auth & Store Endpoints', () => {
     const testAdminEmail = `admin-test-${Date.now()}@test.com`;
     const testUserEmail = `user-test-${Date.now()}@test.com`;
 
-    it('should register a new ADMIN user', async () => {
-      const res = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          name: 'Test Administrator',
-          email: testAdminEmail,
-          password: 'password123',
-          role: 'ADMIN',
-        })
-        .expect(201);
-
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.token).toBeDefined();
-      expect(res.body.data.user.role).toBe('ADMIN');
-      adminToken = res.body.data.token;
-    });
-
-    it('should register a regular USER', async () => {
+    it('should register a regular USER even if requesting ADMIN (public registration strictly enforces USER)', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register')
         .send({
           name: 'Regular Customer',
           email: testUserEmail,
           password: 'password123',
-          role: 'USER',
+          role: 'ADMIN', // Requests ADMIN role, but system enforces USER
         })
         .expect(201);
 
       expect(res.body.success).toBe(true);
+      expect(res.body.data.token).toBeDefined();
       expect(res.body.data.user.role).toBe('USER');
       userToken = res.body.data.token;
+    });
+
+    it('should allow SuperAdmin to login and create a Store Admin', async () => {
+      const bcrypt = await import('bcrypt');
+      const hash = await bcrypt.hash('admin123', 10);
+      await prisma.user.upsert({
+        where: { email: 'admin@storepulse.com' },
+        update: {},
+        create: {
+          name: 'StorePulse SuperAdmin',
+          email: 'admin@storepulse.com',
+          password_hash: hash,
+          role: 'SUPERADMIN',
+        },
+      });
+
+      const superLogin = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'admin@storepulse.com',
+          password: 'admin123',
+        })
+        .expect(200);
+
+      const superToken = superLogin.body.data.token;
+
+      // SuperAdmin creates a Store Admin via POST /admins
+      const adminRes = await request(app)
+        .post('/api/v1/auth/admins')
+        .set('Authorization', `Bearer ${superToken}`)
+        .send({
+          name: 'Test Administrator',
+          email: testAdminEmail,
+          password: 'password123',
+        })
+        .expect(201);
+
+      expect(adminRes.body.success).toBe(true);
+      expect(adminRes.body.data.user.role).toBe('ADMIN');
+
+      // Newly created Store Admin can login
+      const adminLogin = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: testAdminEmail,
+          password: 'password123',
+        })
+        .expect(200);
+
+      expect(adminLogin.body.success).toBe(true);
+      expect(adminLogin.body.data.user.role).toBe('ADMIN');
+      adminToken = adminLogin.body.data.token;
     });
 
     it('should reject registration with duplicate email', async () => {

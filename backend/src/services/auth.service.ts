@@ -33,8 +33,9 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(input.password, 10);
     const resolvedName = input.name && input.name.trim().length > 0 ? input.name.trim() : input.email.split('@')[0] || 'User';
 
-    // Public registration creates regular users only; Admins must be created via Staff Management
-    const assignedRole: Role = input.role === 'SUPERADMIN' ? 'USER' : (input.role || 'USER');
+    // Strict RBAC Security Policy: Public registration strictly creates 'USER' accounts only.
+    // Store Admins can ONLY be created by an authenticated SuperAdmin via Staff Management.
+    const assignedRole: Role = 'USER';
 
     const user = await prisma.user.create({
       data: {
@@ -184,17 +185,25 @@ export class AuthService {
   }
 
   /**
-   * Update a user's role (Admin / SuperAdmin only)
+   * Update a user's role (SuperAdmin only)
    */
   static async updateUserRole(userId: string, role: Role, requesterRole?: Role) {
+    if (requesterRole !== 'SUPERADMIN') {
+      throw new ForbiddenError('Only Superadmin can modify user roles');
+    }
+
     const existing = await prisma.user.findUnique({ where: { id: userId } });
     if (!existing) {
       throw new NotFoundError('User not found');
     }
 
-    // Only SUPERADMIN can demote or promote to SUPERADMIN
-    if (existing.role === 'SUPERADMIN' && requesterRole !== 'SUPERADMIN') {
-      throw new ForbiddenError('Only Superadmin can modify another Superadmin account');
+    // Protect master SuperAdmin account
+    if (existing.role === 'SUPERADMIN') {
+      throw new ForbiddenError('Superadmin account cannot be modified or demoted');
+    }
+
+    if (role === 'SUPERADMIN') {
+      throw new ForbiddenError('Only one Superadmin is permitted in the system');
     }
 
     const updated = await prisma.user.update({

@@ -214,6 +214,9 @@ export class OrderService {
       });
 
       return updated;
+    }, {
+      maxWait: 15000,
+      timeout: 20000,
     });
 
     logger.info(`Order status updated to ${status} for order: ${updatedOrder.id}`, {

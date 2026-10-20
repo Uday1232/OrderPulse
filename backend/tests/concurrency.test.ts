@@ -14,23 +14,37 @@ describe('Order Concurrency & Row-Level Locking (SELECT ... FOR UPDATE)', () => 
     } catch (_) {}
     await prisma.$connect();
 
-    // Register admin user
-    const loginRes = await request(app)
-      .post('/api/v1/auth/register')
-      .send({
+    // Create or find admin user
+    const adminUser = await prisma.user.upsert({
+      where: { email: 'concurrency-admin-test@test.com' },
+      update: {},
+      create: {
         name: 'Concurrency Admin',
-        email: `concurrency-admin-${Date.now()}@test.com`,
-        password: 'password123',
+        email: 'concurrency-admin-test@test.com',
+        password_hash: '$2b$10$abcdefghijklmnopqrstuvwxyz1234567890',
         role: 'ADMIN',
-      });
-    adminToken = loginRes.body.data.token;
+      },
+    });
+
+    const jwt = await import('jsonwebtoken');
+    const { env } = await import('../src/config/env');
+    adminToken = jwt.default.sign(
+      {
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+        name: adminUser.name,
+      },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     // Create a real store
     const store = await prisma.store.create({
       data: {
         name: 'Concurrency Test Store',
         location: 'Row Lock Avenue',
-        admin_id: loginRes.body.data.user.id,
+        admin_id: adminUser.id,
       },
     });
     storeId = store.id;
