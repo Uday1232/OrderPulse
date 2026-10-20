@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  outputFileTracing: false,
+  outputFileTracing: process.platform === 'win32' && !process.env.VERCEL ? false : undefined,
   output: process.env.DOCKER_BUILD === '1' || process.env.NEXT_STANDALONE === 'true' ? 'standalone' : undefined,
   webpack: (config) => {
     config.cache = false;

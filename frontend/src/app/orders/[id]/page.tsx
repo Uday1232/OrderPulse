@@ -34,9 +34,10 @@ import { AdminSidebar } from '../../../components/admin/AdminSidebar';
 import { ApiService } from '../../../services/api';
 import { OrderStatus } from '../../../types/order';
 
-export default function OrderDetailsPage() {
+function OrderDetailsContent() {
   const params = useParams();
-  const orderId = params.id as string;
+  const rawId = params?.id;
+  const orderId = Array.isArray(rawId) ? rawId[0] : (rawId as string) || '';
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -428,5 +429,19 @@ export default function OrderDetailsPage() {
         )}
       </Box>
     </Box>
+  );
+}
+
+export default function OrderDetailsPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <CircularProgress sx={{ color: '#3B82F6' }} />
+        </Box>
+      }
+    >
+      <OrderDetailsContent />
+    </React.Suspense>
   );
 }
