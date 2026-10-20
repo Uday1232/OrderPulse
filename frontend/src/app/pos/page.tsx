@@ -1,7 +1,27 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Box, Typography, Grid, CircularProgress, Alert, Snackbar, Button } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Grid,
+  CircularProgress,
+  Alert,
+  Button,
+  Chip,
+  Drawer,
+  IconButton,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LunchDiningIcon from '@mui/icons-material/LunchDining';
+import FastfoodIcon from '@mui/icons-material/Fastfood';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import LocalPizzaIcon from '@mui/icons-material/LocalPizza';
+import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
+import CoffeeIcon from '@mui/icons-material/Coffee';
+import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 
 import { PosSidebar } from '../../components/pos/PosSidebar';
 import { PosHeader } from '../../components/pos/PosHeader';
@@ -14,7 +34,17 @@ import { useOrderSocket } from '../../context/SocketContext';
 import { useMenu } from '../../hooks/useMenu';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useCartStore } from '../../store/useCartStore';
-import { Item } from '../../types/order';
+
+const MOBILE_CATEGORIES = [
+  { label: 'All', icon: <RestaurantIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Veg. Mania', icon: <LunchDiningIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Sandwich', icon: <FastfoodIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Veg. Pizza', icon: <LocalPizzaIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Burger', icon: <LunchDiningIcon sx={{ fontSize: 16 }} /> },
+  { label: 'French Fries', icon: <FastfoodIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Hot-Coffee', icon: <CoffeeIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Ice-Tea', icon: <LocalCafeIcon sx={{ fontSize: 16 }} /> },
+];
 
 export default function PosPage() {
   const { currentStoreId, setCurrentStoreId, activePreparedOrder, dismissPreparedOrder } = useOrderSocket();
@@ -23,13 +53,19 @@ export default function PosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchInput, setSearchInput] = useState<string>('');
   const debouncedSearch = useDebounce(searchInput, 500);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const {
     inspectedItem,
     setInspectedItem,
     isCheckoutOpen,
     setIsCheckoutOpen,
+    getTotalCount,
+    getTotalAmount,
   } = useCartStore();
+
+  const totalCartCount = getTotalCount();
+  const totalCartAmount = getTotalAmount();
 
   const [dealAlertOpen, setDealAlertOpen] = useState(false);
 
@@ -76,9 +112,10 @@ export default function PosPage() {
         minHeight: 'calc(100vh - 70px)',
         backgroundColor: '#F8FAFC',
         color: '#1E293B',
+        position: 'relative',
       }}
     >
-      {/* 1. Left Category Sidebar */}
+      {/* 1. Left Category Sidebar (Desktop only) */}
       <PosSidebar
         selectedCategory={selectedCategory}
         onSelectCategory={(cat) => setSelectedCategory(cat)}
@@ -91,7 +128,7 @@ export default function PosPage() {
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          borderRight: '1px solid #E2E8F0',
+          borderRight: { xs: 'none', lg: '1px solid #E2E8F0' },
         }}
       >
         {/* Top Header */}
@@ -105,13 +142,13 @@ export default function PosPage() {
         />
 
         {/* Content Body */}
-        <Box sx={{ p: 3, flex: 1, overflowY: 'auto' }}>
+        <Box sx={{ p: { xs: 1.5, sm: 2.5, md: 3 }, flex: 1, overflowY: 'auto', pb: { xs: 10, md: 3 } }}>
           {/* Order Prepared Alert Banner for Customer */}
           {activePreparedOrder && (
             <Box
               sx={{
-                mb: 3,
-                p: 2.5,
+                mb: 2.5,
+                p: { xs: 2, sm: 2.5 },
                 borderRadius: '16px',
                 background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
                 color: '#FFFFFF',
@@ -129,64 +166,108 @@ export default function PosPage() {
                 },
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
+                    width: { xs: 40, sm: 48 },
+                    height: { xs: 40, sm: 48 },
                     borderRadius: '50%',
                     backgroundColor: 'rgba(255, 255, 255, 0.2)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.5rem',
+                    fontSize: { xs: '1.2rem', sm: '1.5rem' },
+                    flexShrink: 0,
                   }}
                 >
                   🍽️
                 </Box>
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>
-                    Your Order #{activePreparedOrder.id.slice(0, 8)} is PREPARED & Ready!
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
+                    Order #{activePreparedOrder.id.slice(0, 8)} is PREPARED!
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.95, fontSize: '0.85rem' }}>
-                    Kitchen has finished your meal! Please head to the pickup counter to collect your fresh order (${Number(activePreparedOrder.total_amount || 0).toFixed(2)}).
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
+                    Please head to the pickup counter to collect your meal (${Number(activePreparedOrder.total_amount || 0).toFixed(2)}).
                   </Typography>
                 </Box>
               </Box>
               <Button
                 variant="contained"
+                size="small"
                 onClick={dismissPreparedOrder}
                 sx={{
                   backgroundColor: '#FFFFFF',
                   color: '#065F46',
                   fontWeight: 700,
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   borderRadius: '10px',
                   textTransform: 'none',
-                  px: 2.5,
+                  px: 2,
                   '&:hover': { backgroundColor: '#F0FDF4' },
                 }}
               >
-                Got It, Thanks!
+                Got It!
               </Button>
             </Box>
           )}
 
+          {/* Mobile Horizontal Category Chips (Visible on mobile/tablet) */}
+          <Box
+            sx={{
+              display: { xs: 'flex', lg: 'none' },
+              overflowX: 'auto',
+              py: 1,
+              gap: 1,
+              mb: 2,
+              '&::-webkit-scrollbar': { display: 'none' },
+              scrollbarWidth: 'none',
+            }}
+          >
+            {MOBILE_CATEGORIES.map((cat) => {
+              const isActive = selectedCategory === cat.label || (selectedCategory === 'All' && cat.label === 'All');
+              return (
+                <Chip
+                  key={cat.label}
+                  icon={cat.icon}
+                  label={cat.label}
+                  onClick={() => setSelectedCategory(cat.label)}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    borderRadius: '10px',
+                    px: 0.8,
+                    py: 1.8,
+                    backgroundColor: isActive ? '#FF7A00' : '#FFFFFF',
+                    color: isActive ? '#FFFFFF !important' : '#475569',
+                    border: isActive ? '1px solid #FF7A00' : '1px solid #E2E8F0',
+                    boxShadow: isActive ? '0 3px 10px rgba(255, 122, 0, 0.3)' : 'none',
+                    '& .MuiChip-icon': {
+                      color: isActive ? '#FFFFFF !important' : '#64748B !important',
+                    },
+                    '&:hover': {
+                      backgroundColor: isActive ? '#E06500' : '#F1F5F9',
+                    },
+                  }}
+                />
+              );
+            })}
+          </Box>
+
           {/* Menu Count Banner */}
-          <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 2 }}>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 800,
                 color: '#FF7A00',
-                fontSize: '1.25rem',
+                fontSize: { xs: '1.1rem', sm: '1.25rem' },
                 letterSpacing: '-0.01em',
               }}
             >
-              {filteredItems.length}+ Delicious Food Menu
+              {filteredItems.length}+ Delicious Dishes
             </Typography>
-            <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
-              Showing {filteredItems.length} handcrafted items
+            <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              {filteredItems.length} handcrafted items
             </Typography>
           </Box>
 
@@ -215,13 +296,16 @@ export default function PosPage() {
             </Box>
           )}
 
-          <Grid container spacing={2.5}>
+          <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
             {filteredItems.map((item) => (
               <Grid item xs={12} sm={6} md={6} lg={4} key={item.id}>
                 <PosItemCard
                   item={item}
                   isSelected={inspectedItem?.id === item.id}
-                  onInspect={(it) => setInspectedItem(it)}
+                  onInspect={(it) => {
+                    setInspectedItem(it);
+                    setMobileDetailOpen(true);
+                  }}
                 />
               </Grid>
             ))}
@@ -229,8 +313,99 @@ export default function PosPage() {
         </Box>
       </Box>
 
-      {/* 3. Right Inspection Detail Panel */}
-      <PosDetailPanel item={inspectedItem} />
+      {/* 3. Right Inspection Detail Panel (Desktop only) */}
+      <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
+        <PosDetailPanel item={inspectedItem} />
+      </Box>
+
+      {/* Mobile Bottom Sheet Drawer for Item Inspection */}
+      <Drawer
+        anchor="bottom"
+        open={mobileDetailOpen}
+        onClose={() => setMobileDetailOpen(false)}
+        PaperProps={{
+          sx: {
+            borderTopLeftRadius: '24px',
+            borderTopRightRadius: '24px',
+            maxHeight: '85vh',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.2)',
+          },
+        }}
+      >
+        <Box sx={{ width: 44, height: 4, backgroundColor: '#CBD5E1', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0.5 }} />
+        <PosDetailPanel item={inspectedItem} onClose={() => setMobileDetailOpen(false)} />
+      </Drawer>
+
+      {/* Sticky Bottom Floating Cart Bar for Mobile (when items added) */}
+      {totalCartCount > 0 && (
+        <Box
+          onClick={() => setIsCheckoutOpen(true)}
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            position: 'fixed',
+            bottom: 16,
+            left: 16,
+            right: 16,
+            zIndex: 999,
+            backgroundColor: '#0F172A',
+            border: '1px solid #FF7A00',
+            color: '#FFFFFF',
+            borderRadius: '16px',
+            p: 1.5,
+            px: 2,
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'transform 0.15s ease-in-out',
+            '&:active': { transform: 'scale(0.98)' },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: '10px',
+                backgroundColor: '#FF7A00',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ShoppingCartIcon sx={{ fontSize: 20, color: '#FFFFFF' }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>
+                {totalCartCount} {totalCartCount === 1 ? 'Item' : 'Items'} in Cart
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#FF7A00', fontWeight: 700, fontSize: '0.8rem' }}>
+                Total: ${totalCartAmount.toFixed(2)}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
+            sx={{
+              backgroundColor: '#FF7A00',
+              color: '#FFFFFF',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              borderRadius: '10px',
+              px: 2,
+              py: 0.8,
+              textTransform: 'none',
+              '&:hover': { backgroundColor: '#E06500' },
+            }}
+          >
+            Checkout
+          </Button>
+        </Box>
+      )}
 
       {/* 4. Checkout Modal */}
       <PosCheckoutModal

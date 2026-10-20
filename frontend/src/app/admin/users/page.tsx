@@ -168,15 +168,15 @@ export default function UserManagementPage() {
 
   return (
     <AdminGuard>
-      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
         <AdminSidebar />
 
-        <Box sx={{ flex: 1, p: 4, overflowY: 'auto' }}>
+        <Box sx={{ flex: 1, p: { xs: 2, sm: 2.5, md: 4 }, overflowY: 'auto' }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3.5, flexWrap: 'wrap', gap: 2 }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontSize: { xs: '1.5rem', sm: '1.8rem', md: '2.125rem' } }}>
                   Staff & Role Management
                 </Typography>
                 {currentUser?.role === 'SUPERADMIN' ? (
@@ -292,9 +292,10 @@ export default function UserManagementPage() {
                 border: '1px solid #E2E8F0',
                 boxShadow: 'none',
                 backgroundColor: '#FFFFFF',
+                overflowX: 'auto',
               }}
             >
-              <Table>
+              <Table sx={{ minWidth: 600 }}>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
                     <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.75rem' }}>USER</TableCell>

@@ -15,6 +15,8 @@ import {
   Card,
   Chip,
   Stack,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
@@ -34,6 +36,8 @@ interface PosDealsModalProps {
 export function PosDealsModal({ open, onClose, onSelectDeal }: PosDealsModalProps) {
   const { offers, appliedOffer, applyOffer } = useOfferStore();
   const { isAdmin } = useAuthStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const activeOffers = offers.filter((o) => o.isActive);
 
@@ -49,9 +53,10 @@ export function PosDealsModal({ open, onClose, onSelectDeal }: PosDealsModalProp
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: '20px',
+          borderRadius: isMobile ? 0 : '20px',
           overflow: 'hidden',
           backgroundColor: '#FFFFFF',
           boxShadow: '0 20px 60px rgba(15, 23, 42, 0.2)',

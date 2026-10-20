@@ -78,10 +78,10 @@ export default function OrderDetailsPage() {
   ];
 
   return (
-    <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
       <AdminSidebar />
 
-      <Box sx={{ flex: 1, p: 4, overflowY: 'auto' }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 2.5, md: 4 }, overflowY: 'auto' }}>
         {/* Back Link */}
         <Button
           component={Link}
@@ -239,8 +239,8 @@ export default function OrderDetailsPage() {
                     Order Items
                   </Typography>
 
-                  <TableContainer sx={{ backgroundColor: '#FFFFFF !important', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: 'none' }}>
-                    <Table size="small">
+                  <TableContainer sx={{ backgroundColor: '#FFFFFF !important', borderRadius: '12px', border: '1px solid #E2E8F0', overflowX: 'auto', boxShadow: 'none' }}>
+                    <Table size="small" sx={{ minWidth: 440 }}>
                       <TableHead sx={{ backgroundColor: '#F8FAFC !important' }}>
                         <TableRow sx={{ backgroundColor: '#F8FAFC !important' }}>
                           <TableCell sx={{ fontWeight: 800, color: '#475569 !important', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: '#F8FAFC !important', borderBottom: '1px solid #E2E8F0', py: 1.5 }}>

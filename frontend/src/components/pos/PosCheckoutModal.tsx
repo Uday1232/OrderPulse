@@ -20,6 +20,8 @@ import {
   TextField,
   Chip,
   Paper,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -139,18 +141,22 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
     onClose();
   };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <Dialog
       open={open}
       onClose={handleModalClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: '24px',
+          borderRadius: isMobile ? 0 : '24px',
           backgroundColor: '#FFFFFF',
           color: '#1E293B',
-          p: 1,
+          p: isMobile ? 0.5 : 1,
         },
       }}
     >

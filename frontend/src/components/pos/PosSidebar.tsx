@@ -58,12 +58,12 @@ export function PosSidebar({ selectedCategory, onSelectCategory }: PosSidebarPro
       sx={{
         width: 240,
         flexShrink: 0,
+        display: { xs: 'none', lg: 'flex' },
         backgroundColor: '#FFFFFF',
         color: '#1E293B',
         borderRight: '1px solid #E2E8F0',
         minHeight: '100%',
         p: 2.5,
-        display: 'flex',
         flexDirection: 'column',
         gap: 2.5,
       }}

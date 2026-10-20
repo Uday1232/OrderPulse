@@ -182,13 +182,13 @@ function UpdateOrderStatusContent() {
   }, [order?.store_id]);
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1.5, sm: 2.5, md: 4 } }}>
       {/* Header & Navigation */}
-      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ mb: 4, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Button
             component={Link}
-            href="/"
+            href="/orders"
             startIcon={<ArrowBackIcon />}
             sx={{
               color: '#9CA3AF',
@@ -199,11 +199,11 @@ function UpdateOrderStatusContent() {
           >
             Back to Orders List
           </Button>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <UpdateIcon sx={{ color: '#F59E0B', fontSize: '2rem' }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 1.5, fontSize: { xs: '1.4rem', sm: '1.75rem', md: '2.125rem' } }}>
+            <UpdateIcon sx={{ color: '#F59E0B', fontSize: { xs: '1.6rem', sm: '2rem' } }} />
             Update Order Status
           </Typography>
-          <Typography variant="body1" sx={{ color: '#9CA3AF', mt: 0.5 }}>
+          <Typography variant="body1" sx={{ color: '#9CA3AF', mt: 0.5, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
             Manage order workflow lifecycle with PostgreSQL row-level concurrency locking and real-time synchronization.
           </Typography>
         </Box>
@@ -216,6 +216,7 @@ function UpdateOrderStatusContent() {
             color: '#34D399',
             border: '1px solid rgba(16, 185, 129, 0.25)',
             fontWeight: 600,
+            maxWidth: '100%',
           }}
         />
       </Box>
@@ -223,7 +224,7 @@ function UpdateOrderStatusContent() {
       {/* Lookup Bar & Quick Selector */}
       <Card
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           mb: 4,
           backgroundColor: 'rgba(17, 24, 39, 0.8)',
           backdropFilter: 'blur(12px)',
@@ -234,14 +235,14 @@ function UpdateOrderStatusContent() {
           <Typography variant="subtitle2" sx={{ color: '#E5E7EB', fontWeight: 700, mb: 1.5 }}>
             Enter Order UUID or Select Below
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField
               fullWidth
               size="small"
               placeholder="e.g. 757bf312-4a48-4744-9365-299596cc60f8"
               value={inputOrderId}
               onChange={(e) => setInputOrderId(e.target.value)}
-              sx={{ flex: 1, minWidth: { xs: '100%', sm: 360 } }}
+              sx={{ flex: 1 }}
             />
             <Button
               type="submit"
@@ -252,6 +253,7 @@ function UpdateOrderStatusContent() {
                 color: '#111827',
                 fontWeight: 700,
                 px: 3,
+                py: { xs: 1, sm: 'auto' },
                 '&:hover': { backgroundColor: '#D97706' },
               }}
             >
@@ -336,12 +338,12 @@ function UpdateOrderStatusContent() {
 
       {/* Main Order Details & Status Transition Card */}
       {order && (
-        <Grid container spacing={4}>
+        <Grid container spacing={{ xs: 2.5, md: 4 }}>
           {/* Left Column: Order Summary & Item Breakdown */}
           <Grid item xs={12} md={7}>
             <Card
               sx={{
-                p: 3.5,
+                p: { xs: 2, sm: 3, md: 3.5 },
                 backgroundColor: 'rgba(17, 24, 39, 0.8)',
                 backdropFilter: 'blur(12px)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -349,13 +351,13 @@ function UpdateOrderStatusContent() {
               }}
             >
               {/* Order Meta Header */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
-                <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
+                <Box sx={{ maxWidth: '100%' }}>
                   <Typography variant="caption" sx={{ color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
                     Order Details
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                    <Typography variant="h6" sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#FFFFFF' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                    <Typography variant="h6" sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#FFFFFF', fontSize: { xs: '0.85rem', sm: '1rem', md: '1.25rem' }, wordBreak: 'break-all' }}>
                       {order.id}
                     </Typography>
                     <Tooltip title={copied ? 'Copied!' : 'Copy UUID'}>
@@ -369,7 +371,7 @@ function UpdateOrderStatusContent() {
               </Box>
 
               {/* Store & Date Info */}
-              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3, p: 2, borderRadius: 2, backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+              <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', mb: 3, p: 2, borderRadius: 2, backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
                 <Box>
                   <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <StorefrontIcon sx={{ fontSize: '0.9rem', color: '#F59E0B' }} /> Store
@@ -393,8 +395,8 @@ function UpdateOrderStatusContent() {
                 <FastfoodIcon sx={{ color: '#F59E0B', fontSize: '1.1rem' }} />
                 Items Breakdown ({order.items.length})
               </Typography>
-              <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', boxShadow: 'none', mb: 3 }}>
-                <Table size="small">
+              <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', boxShadow: 'none', mb: 3, overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 380 }}>
                   <TableHead>
                     <TableRow sx={{ '& th': { borderColor: 'rgba(255, 255, 255, 0.08)', color: '#9CA3AF', fontWeight: 700 } }}>
                       <TableCell>Item</TableCell>
@@ -425,7 +427,7 @@ function UpdateOrderStatusContent() {
                 <Typography variant="subtitle1" sx={{ color: '#9CA3AF', fontWeight: 600 }}>
                   Total Bill Amount:
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981' }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                   ${Number(order.total_amount).toFixed(2)}
                 </Typography>
               </Box>
@@ -436,7 +438,7 @@ function UpdateOrderStatusContent() {
           <Grid item xs={12} md={5}>
             <Card
               sx={{
-                p: 3.5,
+                p: { xs: 2, sm: 3, md: 3.5 },
                 backgroundColor: 'rgba(17, 24, 39, 0.8)',
                 backdropFilter: 'blur(12px)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -460,7 +462,7 @@ function UpdateOrderStatusContent() {
                           '& .MuiStepLabel-label': {
                             color: idx <= currentStepIndex ? '#F59E0B' : '#6B7280',
                             fontWeight: idx === currentStepIndex ? 800 : 500,
-                            fontSize: '0.8rem',
+                            fontSize: { xs: '0.7rem', sm: '0.8rem' },
                           },
                           '& .Mui-completed': { color: '#10B981 !important' },
                           '& .Mui-active': { color: '#F59E0B !important' },

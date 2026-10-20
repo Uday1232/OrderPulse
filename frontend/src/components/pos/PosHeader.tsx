@@ -58,38 +58,38 @@ export function PosHeader({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: 2,
-        py: 1.5,
-        px: 3,
+        gap: { xs: 1.5, sm: 2 },
+        py: { xs: 1.2, sm: 1.5 },
+        px: { xs: 1.5, sm: 3 },
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #E2E8F0',
       }}
     >
       {/* Search Input Bar with Filter */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: '1 1 320px', maxWidth: 460 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', md: 'auto' }, flex: { xs: '1 1 100%', md: '1 1 320px' }, maxWidth: { xs: '100%', md: 460 } }}>
         <TextField
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search By Food Name.."
+          placeholder="Search food by name, ingredients..."
           size="small"
           fullWidth
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#94A3B8' }} />
+                <SearchIcon sx={{ color: '#94A3B8', fontSize: 20 }} />
               </InputAdornment>
             ),
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton size="small" sx={{ color: '#94A3B8' }}>
-                  <TuneIcon sx={{ fontSize: 20 }} />
+                  <TuneIcon sx={{ fontSize: 18 }} />
                 </IconButton>
               </InputAdornment>
             ),
             sx: {
               backgroundColor: '#F8FAFC',
-              borderRadius: '14px',
-              fontSize: '0.9rem',
+              borderRadius: '12px',
+              fontSize: '0.875rem',
               color: '#1E293B',
               '& fieldset': { borderColor: '#E2E8F0' },
               '&:hover fieldset': { borderColor: '#CBD5E1' },
@@ -100,9 +100,9 @@ export function PosHeader({
       </Box>
 
       {/* Right Action Controls */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'space-between', md: 'flex-end' } }}>
         {/* Store Location Dropdown */}
-        <FormControl size="small" sx={{ minWidth: 200 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 'calc(100% - 100px)', sm: 180, md: 200 }, flex: { xs: 1, sm: 'none' } }}>
           <Select
             value={selectedStoreId || (stores[0]?.id || '')}
             onChange={(e) => onStoreChange(e.target.value)}
@@ -112,9 +112,9 @@ export function PosHeader({
               borderRadius: '12px',
               color: '#1E293B',
               fontWeight: 600,
-              fontSize: '0.875rem',
+              fontSize: '0.85rem',
               '& fieldset': { borderColor: '#E2E8F0' },
-              '& .MuiSelect-select': { color: '#0F172A !important' },
+              '& .MuiSelect-select': { color: '#0F172A !important', py: 1 },
             }}
             MenuProps={{
               PaperProps: {
@@ -155,8 +155,8 @@ export function PosHeader({
           <IconButton
             onClick={onOpenCheckout}
             sx={{
-              width: 44,
-              height: 44,
+              width: { xs: 40, sm: 44 },
+              height: { xs: 40, sm: 44 },
               borderRadius: '12px',
               backgroundColor: '#F8FAFC',
               border: '1px solid #E2E8F0',
@@ -172,81 +172,61 @@ export function PosHeader({
                   backgroundColor: '#EF4444',
                   color: '#FFFFFF',
                   fontWeight: 700,
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                 },
               }}
             >
-              <ShoppingCartOutlinedIcon sx={{ fontSize: 22 }} />
+              <ShoppingCartOutlinedIcon sx={{ fontSize: { xs: 20, sm: 22 } }} />
             </Badge>
           </IconButton>
         </Tooltip>
 
-        {/* Notification Bell Popover */}
-        <NotificationPopover />
-
         {/* Best Offer Deals Button */}
         <Button
           onClick={onShowDeals}
-          startIcon={<LocalFireDepartmentIcon sx={{ color: '#FFD700' }} />}
+          startIcon={<LocalFireDepartmentIcon sx={{ color: '#FFD700', fontSize: { xs: 16, sm: 18 } }} />}
+          size="small"
           sx={{
             background: 'linear-gradient(135deg, #FF7A00 0%, #FFA800 100%)',
             color: '#FFFFFF',
             fontWeight: 700,
-            fontSize: '0.85rem',
-            borderRadius: '14px',
-            px: 2.2,
-            py: 1.1,
+            fontSize: { xs: '0.75rem', sm: '0.85rem' },
+            borderRadius: '12px',
+            px: { xs: 1.5, sm: 2 },
+            py: { xs: 0.8, sm: 1 },
             boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
             textTransform: 'none',
+            whiteSpace: 'nowrap',
             '&:hover': {
               background: 'linear-gradient(135deg, #E06500 0%, #FF9000 100%)',
               boxShadow: '0 6px 18px rgba(255, 122, 0, 0.45)',
             },
           }}
         >
-          Best Offer Deals <span style={{ opacity: 0.8, fontSize: '0.75rem', marginLeft: 4 }}>(Click)</span>
+          Deals
         </Button>
 
-        {/* Dashboard Link for Admin */}
+        {/* Dashboard Link for Admin (desktop only, mobile is in navbar drawer) */}
         {isAdmin && (
           <Button
             component={Link}
             href="/dashboard"
             startIcon={<DashboardIcon sx={{ fontSize: 18 }} />}
             sx={{
+              display: { xs: 'none', lg: 'inline-flex' },
               borderRadius: '12px',
               backgroundColor: '#0F172A',
               color: '#FFFFFF',
               fontWeight: 600,
               fontSize: '0.85rem',
               px: 1.8,
-              py: 1,
+              py: 0.9,
               '&:hover': { backgroundColor: '#1E293B' },
             }}
           >
             Admin Suite
           </Button>
         )}
-
-        {/* User / Login Status */}
-        <Button
-          component={Link}
-          href="/login"
-          startIcon={<AccountCircleIcon />}
-          sx={{
-            borderRadius: '12px',
-            border: '1px solid #E2E8F0',
-            color: '#475569',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            px: 1.8,
-            py: 0.9,
-            backgroundColor: '#F8FAFC',
-            '&:hover': { backgroundColor: '#F1F5F9' },
-          }}
-        >
-          {user ? user.name : 'Sign In'}
-        </Button>
       </Box>
     </Box>
   );

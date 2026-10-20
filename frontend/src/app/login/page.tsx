@@ -216,12 +216,12 @@ export default function LoginPage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          p: 4,
+          p: { xs: 2.5, sm: 4 },
           backgroundColor: '#FFFFFF',
         }}
       >
         <Box sx={{ width: '100%', maxWidth: 420 }}>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', mb: 1, letterSpacing: '-0.02em' }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', mb: 1, letterSpacing: '-0.02em', fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
             {isRegistering ? 'Create Account' : 'Welcome Back'}
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748B', mb: 2.5 }}>
@@ -447,7 +447,7 @@ export default function LoginPage() {
               </Divider>
 
               {/* Quick Fill Demo Accounts */}
-              <Stack direction="row" spacing={1}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                 <Button
                   onClick={() => handleFillDemo('SUPERADMIN')}
                   fullWidth

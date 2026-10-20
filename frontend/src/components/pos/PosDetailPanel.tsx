@@ -35,10 +35,10 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
     return (
       <Box
         sx={{
-          width: 380,
+          width: { xs: '100%', lg: 380 },
           flexShrink: 0,
           backgroundColor: '#FFFFFF',
-          borderLeft: '1px solid #E2E8F0',
+          borderLeft: { xs: 'none', lg: '1px solid #E2E8F0' },
           p: 3,
           display: 'flex',
           flexDirection: 'column',
@@ -64,16 +64,19 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
 
   const handleAddToCart = () => {
     addItem(item, inspectionQty);
+    if (onClose) {
+      onClose();
+    }
   };
 
   return (
     <Box
       sx={{
-        width: 380,
+        width: { xs: '100%', lg: 380 },
         flexShrink: 0,
         backgroundColor: '#FFFFFF',
-        borderLeft: '1px solid #E2E8F0',
-        p: 3,
+        borderLeft: { xs: 'none', lg: '1px solid #E2E8F0' },
+        p: { xs: 2.5, sm: 3 },
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
