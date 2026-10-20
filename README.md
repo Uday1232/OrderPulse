@@ -45,7 +45,7 @@ A production-ready, full-stack multi-store Restaurant Order Management & POS pla
 | Docker & Docker Compose | Multi-stage Dockerfiles + `docker-compose.yml` | ✅ Complete |
 | Cloud Database & Redis | Neon Serverless PostgreSQL + Upstash Redis TLS | ✅ Complete |
 | Mobile Responsiveness | Fully responsive mobile POS, bottom sheets, drawer navigation | ✅ Complete |
-| 28 Automated Tests | Jest + Supertest covering validation, concurrency & endpoints | ✅ Complete |
+| 42 Automated Tests | Jest + Supertest covering RBAC, auth, validation, concurrency & endpoints | ✅ Complete |
 
 ---
 
@@ -111,17 +111,23 @@ docker compose down
 
 ---
 
-## 🔑 Demo Logins & Role-Based Access Control (RBAC)
+## 🔑 Access Credentials & Role-Based Access Control (RBAC)
 
-The system features end-to-end JWT authentication and authorization with 3 distinct access levels:
+The application enforces a strict, production-grade Role-Based Access Control (RBAC) policy powered by JWT authentication and cryptographic password hashing (bcrypt):
 
-| Role | Email | Password | Capabilities & Access |
+| Role | Email | Password | Access Level & Capabilities |
 | :--- | :--- | :--- | :--- |
-| **👑 SuperAdmin** | `admin@storepulse.com` | `admin123` | **Full Platform Access**: Live analytics across all 4 stores, store creation/deletion, menu editing, staff & store admin creation, 30-day order archival, and live POS terminal. |
-| **🛡️ Store Admin** | `central_admin@storepulse.com` | `admin123` | **Store Management**: Manage assigned store menu items, categories, view live incoming orders, and execute row-locked status updates (`PLACED` → `PREPARED`). |
-| **👤 Customer** | `user@storepulse.com` | `user123` | **Customer Ordering**: Interactive POS ordering, promotional coupon application, cart discounts, and real-time private order tracking alerts. |
+| **👑 SuperAdmin** *(Single Master)* | `admin@storepulse.com` | `admin123` | **Full Platform Authority**: Sole account permitted to create new Store Admins and modify staff roles. Full access to multi-store analytics, store creation/deletion, menu editing, order archival, and live POS terminal. |
+| **🛡️ Store Admin** *(Store Manager)* | `central_admin@storepulse.com` | `admin123` | **Store Operations**: Manage menu items, categories, view live incoming store orders, and execute row-locked status updates (`PLACED` → `PREPARED`). Cannot create admins or modify staff roles. |
+| **👤 Customer / User** | `user@storepulse.com` | `user123` | **Customer POS Ordering**: Interactive POS menu, promotional coupon application, cart discounts, checkout, and private real-time order tracking. |
 
-> **💡 One-Click Demo Sign-in:** On the login page (`http://localhost:3001/login`), click the quick-fill chips (**👑 SuperAdmin**, **🛡️ Admin**, or **👤 Customer**) to populate the credentials and test immediately with one click.
+### 🔒 Security & Authorization Highlights
+- **Single SuperAdmin Architecture**: The platform allows only **one** master SuperAdmin (`admin@storepulse.com`). The SuperAdmin account is strictly protected from modification, deletion, or demotion.
+- **SuperAdmin-Only Admin Provisioning**: Store Admins **cannot** be registered publicly. They can **only** be provisioned by an authenticated SuperAdmin via the Staff Management portal (`/admin/users`) with auto-generated credentials or via `POST /api/v1/auth/admins`.
+- **Public Registration Role-Lock**: Any user registering via the public registration form (`/login`) is strictly assigned the `USER` (Customer) role. Any client payload attempting to specify an elevated role is unconditionally ignored.
+- **Secure Email/Password Sign-In**: Quick-fill demo preset buttons were removed from the login screen to prevent unauthorized privilege escalation. Both Admins and Customers authenticate securely via email and password:
+  - SuperAdmin and Store Admins are redirected directly to the Admin Dashboard (`/dashboard`).
+  - Customers are redirected directly to the POS Menu (`/pos`).
 
 ---
 
@@ -422,6 +428,19 @@ Aggregates orders per day, revenue per store, and top 5 selling items.
 
 ---
 
+### 7. Authentication & Staff Management Endpoints
+
+| Endpoint | Method | Required Role | Description |
+|---|---|---|---|
+| `/api/v1/auth/login` | `POST` | Public | Authenticates credentials and returns a signed JWT token |
+| `/api/v1/auth/register` | `POST` | Public | Registers a new customer account (strictly creates `USER` role only) |
+| `/api/v1/auth/admins` | `POST` | **`SUPERADMIN` Only** | Provisions a new Store Admin with auto-generated credentials |
+| `/api/v1/auth/users/:id/role` | `PATCH` | **`SUPERADMIN` Only** | Promotes/demotes role (`ADMIN` ↔ `USER`). Master SuperAdmin cannot be altered |
+| `/api/v1/auth/users` | `GET` | `ADMIN` / `SUPERADMIN` | Retrieves registered staff and customer accounts directory |
+| `/api/v1/auth/me` | `GET` | Authenticated | Returns current authenticated profile session |
+
+---
+
 ## ⚡ Real-Time WebSocket Events
 
 The server uses Socket.IO and groups connections by store rooms:
@@ -437,11 +456,12 @@ The server uses Socket.IO and groups connections by store rooms:
 
 ## 🧪 Testing
 
-The test suite contains 28 comprehensive unit and integration tests across 4 test suites:
-- **Validation Schemas:** Zod schemas for order creation, pagination query, status update, and archival.
-- **Order Endpoints:** End-to-end testing of `POST /orders`, `GET /orders` cursor pagination, `GET /orders/:id` retrieval, and `PATCH /orders/:id/status`.
-- **Concurrency & Row Locking:** Simultaneous concurrent updates to the same order to verify `SELECT ... FOR UPDATE` transactions.
-- **Archival & Analytics:** Atomic CTE moving records to `orders_archive` and multi-store analytics with Redis caching.
+The test suite contains **42 comprehensive unit and integration tests across 5 test suites**:
+- **Authentication & RBAC (`tests/auth-store.test.ts`):** Verifies that public registration strictly enforces the `USER` role (ignoring any requested `ADMIN` role), SuperAdmin can log in and provision Store Admins via `POST /admins`, Store Admins can log in, profile authentication guards, and role-based store access.
+- **Order Endpoints (`tests/order.test.ts`):** End-to-end integration testing of `POST /orders`, Zod validation rejections, `GET /orders` cursor-based pagination, single order retrieval (`GET /orders/:id`), and status transitions (`PATCH /orders/:id/status`).
+- **Concurrency & Row-Level Locking (`tests/concurrency.test.ts`):** 5 simultaneous concurrent status updates against the same order to verify `SELECT ... FOR UPDATE` transactional row locking without race conditions or deadlocks.
+- **Data Archival & Analytics (`tests/analytics-archive.test.ts`):** Verifies atomic CTE transaction moving orders older than 30 days to `orders_archive`, daily order aggregation, revenue per store, top-selling items, and Redis caching.
+- **Validation Schemas (`tests/validation.test.ts`):** Zod schemas for order creation, items array validation, cursor pagination parameters, status enums, UUID format, and archival threshold.
 
 ```bash
 cd backend
@@ -450,15 +470,17 @@ npm run test
 
 Sample output:
 ```text
-PASS tests/order.test.ts (10 tests)
-PASS tests/analytics-archive.test.ts (3 tests)
+PASS tests/order.test.ts (11 tests)
 PASS tests/concurrency.test.ts (1 test)
-PASS tests/validation.test.ts (14 tests)
+PASS tests/auth-store.test.ts (12 tests)
+PASS tests/analytics-archive.test.ts (3 tests)
+PASS tests/validation.test.ts (15 tests)
 
-Test Suites: 4 passed, 4 total
-Tests:       28 passed, 28 total
+Test Suites: 5 passed, 5 total
+Tests:       42 passed, 42 total
 Snapshots:   0 total
-Time:        2.118 s
+Time:        84.19 s
+Ran all test suites.
 ```
 
 ---
