@@ -149,7 +149,7 @@ export default function ArchiveOrdersPage() {
                         {new Date(item.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#0F172A', textAlign: 'right' }}>
-                        ${Number(item.total_amount).toFixed(2)}
+                        ₹{Number(item.total_amount).toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))

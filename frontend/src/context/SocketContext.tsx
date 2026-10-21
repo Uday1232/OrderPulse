@@ -207,7 +207,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           id: newOrder.id,
           type: 'created',
           order: newOrder,
-          message: `New Order #${shortId} received ($${amount})`,
+          message: `New Order #${shortId} received (₹${amount})`,
         });
 
         addNotificationItem({
@@ -215,7 +215,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           orderId: newOrder.id,
           type: 'created',
           title: `🔔 New Order Received #${shortId}`,
-          message: `Kitchen alert: $${amount} with ${itemCount} items placed.`,
+          message: `Kitchen alert: ₹${amount} with ${itemCount} items placed.`,
           status: newOrder.status || 'PLACED',
           totalAmount: Number(newOrder.total_amount),
           timestamp: new Date().toISOString(),
@@ -238,7 +238,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           orderId: newOrder.id,
           type: 'created',
           title: `🎉 Order Placed #${shortId}`,
-          message: `Your order has been confirmed and sent to the kitchen ($${amount}).`,
+          message: `Your order has been confirmed and sent to the kitchen (₹${amount}).`,
           status: newOrder.status || 'PLACED',
           totalAmount: Number(newOrder.total_amount),
           timestamp: new Date().toISOString(),

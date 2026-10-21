@@ -29,6 +29,7 @@ import {
   InputAdornment,
   Switch,
   Tooltip,
+  TablePagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -195,6 +196,17 @@ export default function MenuItemsManagementPage() {
     !debouncedSearch || item.name.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
+  // Pagination state for Menu Items
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(8);
+
+  // Reset page when search or store changes
+  React.useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, selectedStore]);
+
+  const paginatedItems = filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
   return (
     <AdminGuard>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
@@ -348,9 +360,9 @@ export default function MenuItemsManagementPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredItems.map((item, idx) => (
+              {paginatedItems.map((item, idx) => (
                 <TableRow key={item.id} hover>
-                  <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
+                  <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{page * rowsPerPage + idx + 1}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box
@@ -394,7 +406,7 @@ export default function MenuItemsManagementPage() {
                     />
                   </TableCell>
                   <TableCell sx={{ fontWeight: 800, color: '#0F172A' }}>
-                    ${Number(item.price).toFixed(2)}
+                    ₹{Number(item.price).toFixed(2)}
                   </TableCell>
                   <TableCell>
                     <Tooltip title={item.is_active !== false ? 'Click to deactivate item' : 'Click to activate item'}>
@@ -451,6 +463,24 @@ export default function MenuItemsManagementPage() {
               ))}
             </TableBody>
           </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 8, 10, 20]}
+            component="div"
+            count={filteredItems.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            sx={{
+              borderTop: '1px solid #E2E8F0',
+              color: '#64748B',
+              '& .MuiTablePagination-select': { color: '#0F172A', fontWeight: 600 },
+              '& .MuiTablePagination-displayedRows': { color: '#64748B', fontWeight: 500 },
+            }}
+          />
         </TableContainer>
 
         {/* Add Item Modal with Multer Photo Upload */}
@@ -515,16 +545,17 @@ export default function MenuItemsManagementPage() {
 
               <Box>
                 <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
-                  Price ($)
+                  Price (₹)
                 </Typography>
                 <TextField
-                  placeholder="12.99"
+                  placeholder="199.00"
                   type="number"
                   value={itemPrice}
                   onChange={(e) => setItemPrice(e.target.value)}
                   fullWidth
                   size="small"
                   InputProps={{
+                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                     sx: {
                       borderRadius: '10px',
                       backgroundColor: '#F8FAFC',
@@ -776,17 +807,17 @@ export default function MenuItemsManagementPage() {
 
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', mb: 0.5, display: 'block' }}>
-                    Price ($)
+                    Price (₹)
                   </Typography>
                   <TextField
-                    placeholder="9.99"
+                    placeholder="149.00"
                     type="number"
                     value={editItemPrice}
                     onChange={(e) => setEditItemPrice(e.target.value)}
                     fullWidth
                     size="small"
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                       sx: {
                         borderRadius: '10px',
                         backgroundColor: '#F8FAFC',

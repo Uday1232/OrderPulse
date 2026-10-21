@@ -25,6 +25,13 @@ router.get(
   OrderController.getOrders
 );
 
+// GET /orders/my-orders - Authenticated Customer: Fetch current user's orders
+router.get(
+  '/my-orders',
+  authenticate,
+  OrderController.getMyOrders
+);
+
 // GET /orders/:id - Fetch single order by UUID
 router.get(
   '/:id',

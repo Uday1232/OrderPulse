@@ -28,7 +28,7 @@ import StoreIcon from '@mui/icons-material/Store';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -51,9 +51,11 @@ export function Navbar() {
     return null;
   }
 
-  const NAV_LINKS = [
-    { label: 'POS Terminal', path: '/pos', icon: <PointOfSaleIcon sx={{ fontSize: 18 }} /> },
-  ];
+  const NAV_LINKS = user
+    ? [
+        { label: 'My Orders', path: '/my-orders', icon: <ShoppingBagIcon sx={{ fontSize: 18 }} /> },
+      ]
+    : [];
 
   const ADMIN_LINKS = [
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 18 }} /> },
@@ -187,30 +189,6 @@ export function Navbar() {
 
             {/* Right Controls: Real-time Socket Indicator & User */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.5 } }}>
-              {/* Socket Live Pulse Indicator */}
-              <Chip
-                icon={
-                  <FiberManualRecordIcon
-                    sx={{
-                      fontSize: '0.65rem !important',
-                      color: isConnected ? '#10B981 !important' : '#EF4444 !important',
-                    }}
-                  />
-                }
-                label={isConnected ? 'LIVE' : 'OFF'}
-                size="small"
-                sx={{
-                  backgroundColor: isConnected ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                  color: isConnected ? '#34D399' : '#F87171',
-                  border: `1px solid ${isConnected ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                  fontWeight: 700,
-                  fontSize: '0.68rem',
-                  letterSpacing: '0.04em',
-                  px: { xs: 0.2, sm: 0.5 },
-                  height: 26,
-                }}
-              />
-
               {/* Global Real-time Notification Popover */}
               <NotificationPopover
                 buttonSx={{
@@ -366,37 +344,41 @@ export function Navbar() {
         )}
 
         {/* Drawer Links */}
-        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, px: 1, letterSpacing: '0.08em' }}>
-          APP NAVIGATION
-        </Typography>
-        <List sx={{ mt: 0.5, mb: 2 }}>
-          {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.path || (link.path === '/pos' && pathname === '/');
-            return (
-              <ListItem key={link.path} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  component={Link}
-                  href={link.path}
-                  onClick={handleDrawerToggle}
-                  sx={{
-                    borderRadius: '10px',
-                    backgroundColor: isActive ? 'rgba(255, 122, 0, 0.15)' : 'transparent',
-                    color: isActive ? '#FF7A00' : '#E2E8F0',
-                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
-                  }}
-                >
-                  <ListItemIcon sx={{ color: isActive ? '#FF7A00' : '#94A3B8', minWidth: 36 }}>
-                    {link.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={link.label}
-                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 700 : 500 }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-        </List>
+        {NAV_LINKS.length > 0 && (
+          <>
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, px: 1, letterSpacing: '0.08em' }}>
+              CUSTOMER ACCOUNT
+            </Typography>
+            <List sx={{ mt: 0.5, mb: 2 }}>
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.path;
+                return (
+                  <ListItem key={link.path} disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                      component={Link}
+                      href={link.path}
+                      onClick={handleDrawerToggle}
+                      sx={{
+                        borderRadius: '10px',
+                        backgroundColor: isActive ? 'rgba(255, 122, 0, 0.15)' : 'transparent',
+                        color: isActive ? '#FF7A00' : '#E2E8F0',
+                        '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+                      }}
+                    >
+                      <ListItemIcon sx={{ color: isActive ? '#FF7A00' : '#94A3B8', minWidth: 36 }}>
+                        {link.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={link.label}
+                        primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 700 : 500 }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </>
+        )}
 
         {/* Admin Navigation Links if logged in as Admin */}
         {isAdmin && (

@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
                 Total Revenue
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', my: 1 }}>
-                ${Number(summary.totalRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{Number(summary.totalRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
                 <TrendingUpIcon sx={{ fontSize: 16 }} />
@@ -193,7 +193,7 @@ export default function AnalyticsPage() {
                 Average Order Value
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', my: 1 }}>
-                ${avgOrderValue}
+                ₹{avgOrderValue}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
                 <TrendingUpIcon sx={{ fontSize: 16 }} />
@@ -275,7 +275,7 @@ export default function AnalyticsPage() {
                     return (
                       <Box key={item.store} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                         <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
-                          ${item.revenue.toFixed(0)}
+                          ₹{item.revenue.toFixed(0)}
                         </Typography>
                         <Box
                           sx={{
@@ -328,7 +328,7 @@ export default function AnalyticsPage() {
                       {item.name}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: item.color }}>
-                      {item.count} sold (${Number(item.revenue).toFixed(2)})
+                      {item.count} sold (₹{Number(item.revenue).toFixed(2)})
                     </Typography>
                   </Box>
                   <LinearProgress

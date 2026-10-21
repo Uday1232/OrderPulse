@@ -136,7 +136,7 @@ export function PosItemCard({ item, isSelected, onInspect }: PosItemCardProps) {
             fontSize: '1.25rem',
           }}
         >
-          ${Number(item.price).toFixed(2)}
+          ₹{Number(item.price).toFixed(2)}
         </Typography>
         <Typography
           variant="caption"
@@ -146,7 +146,7 @@ export function PosItemCard({ item, isSelected, onInspect }: PosItemCardProps) {
             fontWeight: 500,
           }}
         >
-          ${originalPrice}
+          ₹{originalPrice}
         </Typography>
       </Box>
 

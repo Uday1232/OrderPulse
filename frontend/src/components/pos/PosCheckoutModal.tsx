@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Dialog,
   DialogTitle,
@@ -92,6 +93,10 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
   const grandTotal = Number((discountedSubtotal + tax).toFixed(2));
 
   const handlePlaceOrder = async () => {
+    if (!user) {
+      setErrorMessage('Please sign in or register before placing your order.');
+      return;
+    }
     if (items.length === 0) return;
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -105,7 +110,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
         user_id: user?.id || null,
         items: items.map((i) => ({
           item_id: i.item_id,
-          name: discountAmount > 0 ? `${i.name} [${appliedOffer?.code} -${appliedOffer?.discountValue}${appliedOffer?.discountType === 'PERCENT' ? '%' : '$'}]` : i.name,
+          name: discountAmount > 0 ? `${i.name} [${appliedOffer?.code} -${appliedOffer?.discountValue}${appliedOffer?.discountType === 'PERCENT' ? '%' : '₹'}]` : i.name,
           qty: i.qty,
           price: Number((i.price * discountRatio).toFixed(2)),
         })),
@@ -231,7 +236,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                       {it.qty}x {it.name}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#0F172A', fontWeight: 700 }}>
-                      ${(it.qty * it.price).toFixed(2)}
+                      ₹{(it.qty * it.price).toFixed(2)}
                     </Typography>
                   </Box>
                 ))}
@@ -243,7 +248,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               <Stack spacing={0.7}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" sx={{ color: '#64748B' }}>Subtotal</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>${orderSuccess.subtotal.toFixed(2)}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{orderSuccess.subtotal.toFixed(2)}</Typography>
                 </Box>
 
                 {orderSuccess.discountAmount > 0 && (
@@ -252,20 +257,20 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                       Offer Applied ({orderSuccess.offerCode})
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                      -${orderSuccess.discountAmount.toFixed(2)}
+                      -₹{orderSuccess.discountAmount.toFixed(2)}
                     </Typography>
                   </Box>
                 )}
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" sx={{ color: '#64748B' }}>Tax (5% GST)</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>${orderSuccess.tax.toFixed(2)}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{orderSuccess.tax.toFixed(2)}</Typography>
                 </Box>
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid #CBD5E1' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A' }}>Grand Total</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 900, color: '#FF7A00' }}>
-                    ${orderSuccess.total.toFixed(2)}
+                    ₹{orderSuccess.total.toFixed(2)}
                   </Typography>
                 </Box>
               </Stack>
@@ -315,6 +320,40 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
           </Box>
         ) : (
           <Box>
+            {!user && (
+              <Alert
+                severity="warning"
+                action={
+                  <Button
+                    component={Link}
+                    href="/login"
+                    size="small"
+                    sx={{
+                      color: '#B45309',
+                      fontWeight: 800,
+                      backgroundColor: '#FDE68A',
+                      borderRadius: '8px',
+                      px: 1.5,
+                      textTransform: 'none',
+                      '&:hover': { backgroundColor: '#FCD34D' },
+                    }}
+                  >
+                    Sign In / Sign Up
+                  </Button>
+                }
+                sx={{
+                  mb: 2,
+                  borderRadius: '12px',
+                  backgroundColor: '#FEF3C7',
+                  color: '#92400E',
+                  border: '1px solid #FDE68A',
+                  '& .MuiAlert-icon': { color: '#D97706' },
+                }}
+              >
+                You must be signed in to place an order.
+              </Alert>
+            )}
+
             {errorMessage && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>
                 {errorMessage}
@@ -349,7 +388,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                         {item.name}
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#64748B' }}>
-                        ${Number(item.price).toFixed(2)} each
+                        ₹{Number(item.price).toFixed(2)} each
                       </Typography>
                     </Box>
 
@@ -387,7 +426,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
 
                     {/* Item Total */}
                     <Typography variant="body2" sx={{ fontWeight: 800, color: '#0F172A', minWidth: 65, textAlign: 'right' }}>
-                      ${(item.price * item.qty).toFixed(2)}
+                      ₹{(item.price * item.qty).toFixed(2)}
                     </Typography>
 
                     <IconButton
@@ -537,10 +576,10 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                     <ConfirmationNumberIcon sx={{ color: '#059669', fontSize: 18 }} />
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 700, color: '#065F46' }}>
-                        {appliedOffer.code} ({appliedOffer.discountType === 'PERCENT' ? `${appliedOffer.discountValue}% Off` : `$${appliedOffer.discountValue} Flat`})
+                        {appliedOffer.code} ({appliedOffer.discountType === 'PERCENT' ? `${appliedOffer.discountValue}% Off` : `₹${appliedOffer.discountValue} Flat`})
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#059669', fontWeight: 600 }}>
-                        Discount applied: -${discountAmount.toFixed(2)}
+                        Discount applied: -₹{discountAmount.toFixed(2)}
                       </Typography>
                     </Box>
                   </Box>
@@ -568,10 +607,10 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                 >
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: '#B45309' }}>
-                      {appliedOffer.code} (Min Order ${appliedOffer.minOrderAmount.toFixed(2)})
+                      {appliedOffer.code} (Min Order ₹{appliedOffer.minOrderAmount.toFixed(2)})
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#D97706', display: 'block' }}>
-                      Add ${(appliedOffer.minOrderAmount - subtotal).toFixed(2)} more to qualify for discount
+                      Add ₹{(appliedOffer.minOrderAmount - subtotal).toFixed(2)} more to qualify for discount
                     </Typography>
                   </Box>
                   <Button
@@ -592,7 +631,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                   Subtotal
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  ${subtotal.toFixed(2)}
+                  ₹{subtotal.toFixed(2)}
                 </Typography>
               </Box>
 
@@ -602,7 +641,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                     Promotional Discount ({appliedOffer?.code})
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#059669', fontWeight: 700 }}>
-                    -${discountAmount.toFixed(2)}
+                    -₹{discountAmount.toFixed(2)}
                   </Typography>
                 </Box>
               )}
@@ -612,7 +651,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                   Tax (5%)
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  ${tax.toFixed(2)}
+                  ₹{tax.toFixed(2)}
                 </Typography>
               </Box>
 
@@ -621,7 +660,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                   Total Amount
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#FF7A00' }}>
-                  ${grandTotal.toFixed(2)}
+                  ₹{grandTotal.toFixed(2)}
                 </Typography>
               </Box>
             </Stack>
@@ -630,28 +669,49 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
       </DialogContent>
 
       {!orderSuccess && (
-        <DialogActions sx={{ p: 2.5 }}>
+        <DialogActions sx={{ p: 2.5, px: 3, borderTop: '1px solid #F1F5F9' }}>
           <Button onClick={handleModalClose} disabled={isSubmitting} sx={{ color: '#64748B', fontWeight: 600 }}>
             Cancel
           </Button>
-          <Button
-            onClick={handlePlaceOrder}
-            disabled={items.length === 0 || isSubmitting}
-            variant="contained"
-            sx={{
-              backgroundColor: '#FF7A00',
-              color: '#FFFFFF',
-              fontWeight: 700,
-              fontSize: '0.95rem',
-              borderRadius: '12px',
-              px: 3.5,
-              py: 1.2,
-              boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
-              '&:hover': { backgroundColor: '#E06500' },
-            }}
-          >
-            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : `Confirm & Pay $${grandTotal.toFixed(2)}`}
-          </Button>
+          {!user ? (
+            <Button
+              component={Link}
+              href="/login"
+              variant="contained"
+              sx={{
+                backgroundColor: '#FF7A00',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                borderRadius: '12px',
+                px: 3.5,
+                py: 1.2,
+                boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
+                '&:hover': { backgroundColor: '#E06500' },
+              }}
+            >
+              Sign In to Place Order
+            </Button>
+          ) : (
+            <Button
+              onClick={handlePlaceOrder}
+              disabled={items.length === 0 || isSubmitting}
+              variant="contained"
+              sx={{
+                backgroundColor: '#FF7A00',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                borderRadius: '12px',
+                px: 3.5,
+                py: 1.2,
+                boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
+                '&:hover': { backgroundColor: '#E06500' },
+              }}
+            >
+              {isSubmitting ? <CircularProgress size={22} color="inherit" /> : `Confirm & Pay ₹${grandTotal.toFixed(2)}`}
+            </Button>
+          )}
         </DialogActions>
       )}
     </Dialog>

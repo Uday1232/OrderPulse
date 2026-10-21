@@ -410,9 +410,9 @@ function UpdateOrderStatusContent() {
                       <TableRow key={idx} sx={{ '& td': { borderColor: 'rgba(255, 255, 255, 0.05)', color: '#E5E7EB' } }}>
                         <TableCell sx={{ fontWeight: 600 }}>{item.name}</TableCell>
                         <TableCell align="center">{item.quantity || item.qty || 1}x</TableCell>
-                        <TableCell align="right">${Number(item.unit_price || item.price || 0).toFixed(2)}</TableCell>
+                        <TableCell align="right">₹{Number(item.unit_price || item.price || 0).toFixed(2)}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                          ${Number(item.subtotal || ((item.quantity || item.qty || 1) * (item.unit_price || item.price || 0))).toFixed(2)}
+                          ₹{Number(item.subtotal || ((item.quantity || item.qty || 1) * (item.unit_price || item.price || 0))).toFixed(2)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -428,7 +428,7 @@ function UpdateOrderStatusContent() {
                   Total Bill Amount:
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                  ${Number(order.total_amount).toFixed(2)}
+                  ₹{Number(order.total_amount).toFixed(2)}
                 </Typography>
               </Box>
             </Card>

@@ -221,7 +221,7 @@ export default function OrderDetailsClient({ initialOrderId }: OrderDetailsClien
                         Total Amount
                       </Typography>
                       <Typography variant="h6" sx={{ fontWeight: 800, color: '#FF7A00' }}>
-                        ${Number(order.total_amount).toFixed(2)}
+                        ₹{Number(order.total_amount).toFixed(2)}
                       </Typography>
                     </Box>
 
@@ -292,10 +292,10 @@ export default function OrderDetailsClient({ initialOrderId }: OrderDetailsClien
                               />
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, color: '#334155 !important', py: 1.75, borderBottom: '1px solid #F1F5F9 !important', backgroundColor: 'transparent !important' }}>
-                              ${Number(item.price || item.unit_price || 0).toFixed(2)}
+                              ₹{Number(item.price || item.unit_price || 0).toFixed(2)}
                             </TableCell>
                             <TableCell sx={{ fontWeight: 800, color: '#0F172A !important', textAlign: 'right', py: 1.75, borderBottom: '1px solid #F1F5F9 !important', backgroundColor: 'transparent !important' }}>
-                              ${Number((item.price || item.unit_price || 0) * (item.qty || item.quantity || 1)).toFixed(2)}
+                              ₹{Number((item.price || item.unit_price || 0) * (item.qty || item.quantity || 1)).toFixed(2)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -305,7 +305,7 @@ export default function OrderDetailsClient({ initialOrderId }: OrderDetailsClien
 
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2.5 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A' }}>
-                      Total: <span style={{ color: '#FF7A00', fontWeight: 900, fontSize: '1.25rem' }}>${Number(order.total_amount).toFixed(2)}</span>
+                      Total: <span style={{ color: '#FF7A00', fontWeight: 900, fontSize: '1.25rem' }}>₹{Number(order.total_amount).toFixed(2)}</span>
                     </Typography>
                   </Box>
                 </Card>

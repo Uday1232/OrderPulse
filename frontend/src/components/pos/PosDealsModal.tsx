@@ -187,10 +187,10 @@ export function PosDealsModal({ open, onClose, onSelectDeal }: PosDealsModalProp
                         >
                           {offer.discountType === 'PERCENT'
                             ? `${offer.discountValue}% OFF`
-                            : `$${offer.discountValue.toFixed(2)} FLAT`}
+                            : `₹${offer.discountValue.toFixed(2)} FLAT`}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#94A3B8' }}>
-                          {offer.minOrderAmount > 0 ? `(Min Order $${offer.minOrderAmount.toFixed(2)})` : '(No Minimum Order)'}
+                          {offer.minOrderAmount > 0 ? `(Min Order ₹${offer.minOrderAmount.toFixed(2)})` : '(No Minimum Order)'}
                         </Typography>
                       </Box>
                     </Box>

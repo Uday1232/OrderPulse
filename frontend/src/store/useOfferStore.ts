@@ -44,10 +44,10 @@ const DEFAULT_OFFERS: DealOffer[] = [
   {
     id: 'offer-pizza-5',
     code: 'PIZZA5',
-    title: '$5.00 Flat Discount',
-    description: 'Flat $5.00 instant rebate deducted directly from your order',
+    title: '₹50.00 Flat Discount',
+    description: 'Flat ₹50.00 instant rebate deducted directly from your order',
     discountType: 'FLAT',
-    discountValue: 5.0,
+    discountValue: 50.0,
     minOrderAmount: 0,
     isActive: true,
     category: 'Pizza',

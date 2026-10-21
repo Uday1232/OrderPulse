@@ -272,7 +272,7 @@ export default function OrdersListPage() {
                       {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 800, color: '#0F172A' }}>
-                      ${Number(order.total_amount).toFixed(2)}
+                      ₹{Number(order.total_amount).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Chip

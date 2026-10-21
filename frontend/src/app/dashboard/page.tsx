@@ -154,7 +154,7 @@ export default function DashboardOverviewPage() {
                 Total Revenue
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', my: 1 }}>
-                ${Number(summary.totalRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{Number(summary.totalRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
                 <TrendingUpIcon sx={{ fontSize: 16 }} />

@@ -306,6 +306,24 @@ export class ApiService {
     return res.json();
   }
 
+  static async getMyOrders(): Promise<{ success: boolean; data: Order[] }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/orders/my-orders`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch your orders: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
   static async createOrder(data: {
     store_id: string;
     user_id?: string | null;

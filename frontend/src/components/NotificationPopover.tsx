@@ -278,7 +278,7 @@ export function NotificationPopover({ buttonSx, iconSx }: NotificationPopoverPro
 
                     {item.totalAmount !== undefined && item.totalAmount > 0 && (
                       <Chip
-                        label={`$${item.totalAmount.toFixed(2)}`}
+                        label={`₹${item.totalAmount.toFixed(2)}`}
                         size="small"
                         sx={{
                           mt: 0.8,

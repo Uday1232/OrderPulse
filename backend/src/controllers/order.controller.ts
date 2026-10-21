@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env';
 import { OrderService } from '../services/order.service';
 import { CreateOrderInput, GetOrdersQuery, UpdateOrderStatusInput } from '../validators/order.schema';
 
@@ -9,7 +11,23 @@ export class OrderController {
    */
   static async createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const order = await OrderService.createOrder(req.body as CreateOrderInput);
+      let resolvedUserId = req.body.user_id;
+      if (!resolvedUserId && req.headers.authorization?.startsWith('Bearer ')) {
+        try {
+          const token = req.headers.authorization.split(' ')[1];
+          if (token) {
+            const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+            if (decoded?.id) {
+              resolvedUserId = decoded.id;
+            }
+          }
+        } catch (_) {}
+      }
+
+      const order = await OrderService.createOrder({
+        ...(req.body as CreateOrderInput),
+        ...(resolvedUserId ? { user_id: resolvedUserId } : {}),
+      });
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
@@ -71,6 +89,23 @@ export class OrderController {
       res.status(200).json({
         success: true,
         data: order,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /orders/my-orders
+   * Retrieve all orders for currently authenticated customer
+   */
+  static async getMyOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const orders = await OrderService.getUserOrders(userId);
+      res.status(200).json({
+        success: true,
+        data: orders,
       });
     } catch (error) {
       next(error);

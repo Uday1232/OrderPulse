@@ -11,6 +11,7 @@ import {
   Chip,
   Drawer,
   IconButton,
+  Pagination,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -104,6 +105,21 @@ export default function PosPage() {
       return itemNameLower.includes(catLower) || itemCatLower.includes(catLower);
     });
   }, [allItems, debouncedSearch, selectedCategory]);
+
+  // Pagination for POS Dishes
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
+
+  // Reset page when category or search changes
+  React.useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, debouncedSearch]);
+
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredItems, page]);
 
   return (
     <Box
@@ -297,7 +313,7 @@ export default function PosPage() {
           )}
 
           <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
-            {filteredItems.map((item) => (
+            {paginatedItems.map((item) => (
               <Grid item xs={12} sm={6} md={6} lg={4} key={item.id}>
                 <PosItemCard
                   item={item}
@@ -310,6 +326,33 @@ export default function PosPage() {
               </Grid>
             ))}
           </Grid>
+
+          {/* Menu Pagination Controls */}
+          {totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 1 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(_, val) => {
+                  setPage(val);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                shape="rounded"
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    fontWeight: 700,
+                    borderRadius: '10px',
+                    color: '#334155',
+                  },
+                  '& .Mui-selected': {
+                    backgroundColor: '#FF7A00 !important',
+                    color: '#FFFFFF !important',
+                    boxShadow: '0 3px 10px rgba(255, 122, 0, 0.35)',
+                  },
+                }}
+              />
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -381,7 +424,7 @@ export default function PosPage() {
                 {totalCartCount} {totalCartCount === 1 ? 'Item' : 'Items'} in Cart
               </Typography>
               <Typography variant="caption" sx={{ color: '#FF7A00', fontWeight: 700, fontSize: '0.8rem' }}>
-                Total: ${totalCartAmount.toFixed(2)}
+                Total: ₹{totalCartAmount.toFixed(2)}
               </Typography>
             </Box>
           </Box>

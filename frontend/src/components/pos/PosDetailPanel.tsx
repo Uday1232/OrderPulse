@@ -163,7 +163,7 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
                 fontSize: '1.35rem',
               }}
             >
-              ${Number(item.price).toFixed(2)}
+              ₹{Number(item.price).toFixed(2)}
             </Typography>
             <Typography
               variant="caption"
@@ -173,7 +173,7 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
                 display: 'block',
               }}
             >
-              ${originalPrice}
+              ₹{originalPrice}
             </Typography>
           </Box>
         </Box>
@@ -279,7 +279,7 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
               },
             }}
           >
-            Add-To-Cart (${totalItemAmount})
+            Add-To-Cart (₹{totalItemAmount})
           </Button>
         </Stack>
       </Box>

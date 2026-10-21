@@ -72,6 +72,11 @@ export interface Order {
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   created_at: string;
+  store?: {
+    id?: string;
+    name?: string;
+    location?: string;
+  } | null;
 }
 
 export interface OrderArchive extends Order {}

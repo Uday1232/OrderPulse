@@ -277,7 +277,7 @@ export default function AdminOffersPage() {
                           label={
                             offer.discountType === 'PERCENT'
                               ? `${offer.discountValue}% OFF`
-                              : `$${offer.discountValue.toFixed(2)} FLAT`
+                              : `₹${offer.discountValue.toFixed(2)} FLAT`
                           }
                           size="small"
                           sx={{
@@ -290,7 +290,7 @@ export default function AdminOffersPage() {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
-                          ${offer.minOrderAmount.toFixed(2)}
+                          ₹{offer.minOrderAmount.toFixed(2)}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -501,14 +501,14 @@ export default function AdminOffersPage() {
                     }}
                   >
                     <MenuItem value="PERCENT">Percentage (% Off)</MenuItem>
-                    <MenuItem value="FLAT">Flat Cash ($ Off)</MenuItem>
+                    <MenuItem value="FLAT">Flat Cash (₹ Off)</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
               <Grid item xs={6}>
                 <TextField
                   fullWidth
-                  label={discountType === 'PERCENT' ? 'Discount %' : 'Discount Amount ($)'}
+                  label={discountType === 'PERCENT' ? 'Discount %' : 'Discount Amount (₹)'}
                   type="number"
                   value={discountValue}
                   onChange={(e) => setDiscountValue(Number(e.target.value))}
@@ -532,7 +532,7 @@ export default function AdminOffersPage() {
               <Grid item xs={6}>
                 <TextField
                   fullWidth
-                  label="Minimum Order ($)"
+                  label="Minimum Order (₹)"
                   type="number"
                   value={minOrderAmount}
                   onChange={(e) => setMinOrderAmount(Number(e.target.value))}

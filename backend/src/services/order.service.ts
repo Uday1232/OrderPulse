@@ -255,4 +255,17 @@ export class OrderService {
 
     return order;
   }
+
+  /**
+   * Fetch all orders placed by a specific user
+   */
+  static async getUserOrders(userId: string): Promise<Order[]> {
+    return prisma.order.findMany({
+      where: { user_id: userId },
+      include: {
+        store: { select: { id: true, name: true, location: true } },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
 }
