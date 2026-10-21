@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
@@ -270,7 +269,7 @@ export default function MyOrdersPage() {
               />
             </Box>
             <Typography variant="body2" sx={{ color: '#64748B', mt: 0.5 }}>
-              Track your live meal preparation status, order history, and digital receipts in real-time.
+              View your order history, live meal preparation status, and digital receipts in real-time.
             </Typography>
           </Box>
 
@@ -494,15 +493,13 @@ export default function MyOrdersPage() {
 
                   <Divider sx={{ my: 1.5, borderColor: '#F1F5F9' }} />
 
-                  {/* Footer Total & Tracking Action */}
+                  {/* Footer Total */}
                   <Box
                     sx={{
                       display: 'flex',
-                      flexDirection: { xs: 'column', sm: 'row' },
-                      alignItems: { xs: 'flex-start', sm: 'center' },
+                      alignItems: 'center',
                       justifyContent: 'space-between',
                       pt: 0.5,
-                      gap: 2,
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -526,27 +523,6 @@ export default function MyOrdersPage() {
                         }}
                       />
                     </Box>
-
-                    <Button
-                      component={Link}
-                      href={`/orders/${ord.id}`}
-                      variant="contained"
-                      endIcon={<ArrowForwardIcon />}
-                      size="small"
-                      sx={{
-                        backgroundColor: '#0F172A',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        borderRadius: '10px',
-                        px: 2.5,
-                        py: 0.9,
-                        textTransform: 'none',
-                        '&:hover': { backgroundColor: '#1E293B' },
-                      }}
-                    >
-                      Track Live Status
-                    </Button>
                   </Box>
                 </Card>
               );
