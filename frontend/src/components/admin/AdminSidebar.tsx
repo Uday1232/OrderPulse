@@ -13,7 +13,6 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-import StorefrontIcon from '@mui/icons-material/Storefront';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
@@ -52,32 +51,6 @@ export function AdminSidebar() {
         }}
       >
         <Box>
-          {/* Brand Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1, mb: 3.5 }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: '10px',
-                backgroundColor: '#3B82F6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)',
-              }}
-            >
-              <StorefrontIcon sx={{ fontSize: 22, color: '#FFFFFF' }} />
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#FFFFFF', lineHeight: 1.1 }}>
-                StorePulse
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#94A3B8' }}>
-                Management Suite
-              </Typography>
-            </Box>
-          </Box>
-
           {/* Navigation Items */}
           <Stack spacing={0.8}>
             {NAV_ITEMS.map((item) => {

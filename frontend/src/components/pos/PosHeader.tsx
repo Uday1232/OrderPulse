@@ -15,20 +15,19 @@ import {
   Typography,
   Chip,
   Tooltip,
+  Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStores } from '../../hooks/useStores';
-import { NotificationPopover } from '../NotificationPopover';
 
 interface PosHeaderProps {
   searchValue: string;
@@ -48,7 +47,8 @@ export function PosHeader({
   onShowDeals,
 }: PosHeaderProps) {
   const totalCartCount = useCartStore((s) => s.getTotalCount());
-  const { user, isAdmin } = useAuthStore();
+  const totalCartAmount = useCartStore((s) => s.getTotalAmount());
+  const { isAdmin } = useAuthStore();
   const { stores } = useStores();
 
   return (
@@ -66,7 +66,7 @@ export function PosHeader({
       }}
     >
       {/* Search Input Bar with Filter */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', md: 'auto' }, flex: { xs: '1 1 100%', md: '1 1 320px' }, maxWidth: { xs: '100%', md: 460 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', md: 'auto' }, flex: { xs: '1 1 100%', md: '1 1 320px' }, maxWidth: { xs: '100%', md: 440 } }}>
         <TextField
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -101,48 +101,197 @@ export function PosHeader({
 
       {/* Right Action Controls */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'space-between', md: 'flex-end' } }}>
-        {/* Store Location Dropdown */}
-        <FormControl size="small" sx={{ minWidth: { xs: 'calc(100% - 100px)', sm: 180, md: 200 }, flex: { xs: 1, sm: 'none' } }}>
+        {/* Interactive & Highly Visible Store Location Dropdown */}
+        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 240, md: 270 }, flex: { xs: 1, sm: 'none' } }}>
           <Select
             value={selectedStoreId || (stores[0]?.id || '')}
             onChange={(e) => onStoreChange(e.target.value)}
             displayEmpty
+            renderValue={(selectedId) => {
+              const curStore = stores.find((s) => s.id === selectedId) || stores[0];
+              return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0, textAlign: 'left', py: 0.2 }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '8px',
+                      backgroundColor: '#FFEDD5',
+                      color: '#EA580C',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <StorefrontIcon sx={{ fontSize: 18 }} />
+                  </Box>
+                  <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        sx={{ fontWeight: 800, color: '#0F172A', fontSize: '0.86rem', letterSpacing: '-0.01em' }}
+                      >
+                        {curStore?.name || 'Select Store'}
+                      </Typography>
+                      <Chip
+                        label="Active"
+                        size="small"
+                        sx={{
+                          height: 16,
+                          fontSize: '0.62rem',
+                          fontWeight: 800,
+                          backgroundColor: '#DCFCE7',
+                          color: '#15803D',
+                          borderRadius: '4px',
+                          '& .MuiChip-label': { px: 0.6 },
+                        }}
+                      />
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      noWrap
+                      sx={{ color: '#64748B', display: 'block', fontSize: '0.7rem', fontWeight: 600 }}
+                    >
+                      📍 {curStore?.location || 'Store Branch'}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            }}
             sx={{
-              backgroundColor: '#F8FAFC',
+              backgroundColor: '#FFF7ED',
+              border: '1.5px solid #FDBA74',
               borderRadius: '12px',
               color: '#1E293B',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              '& fieldset': { borderColor: '#E2E8F0' },
-              '& .MuiSelect-select': { color: '#0F172A !important', py: 1 },
+              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: '#EA580C',
+                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.15)',
+              },
+              '& .MuiSelect-select': { color: '#0F172A !important', py: 0.6, px: 1.2 },
+              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+              '& .MuiSvgIcon-root': { color: '#EA580C' },
             }}
             MenuProps={{
               PaperProps: {
                 sx: {
                   backgroundColor: '#FFFFFF',
                   color: '#0F172A',
+                  borderRadius: '14px',
+                  boxShadow: '0 12px 36px rgba(0,0,0,0.12)',
+                  mt: 1,
+                  maxHeight: 420,
+                  '& .MuiList-root': { py: 1 },
                 },
               },
             }}
           >
+            {/* Header banner inside menu */}
+            <Box sx={{ px: 2, py: 1.2, borderBottom: '1px solid #F1F5F9', backgroundColor: '#F8FAFC' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <StorefrontIcon sx={{ fontSize: 16, color: '#EA580C' }} />
+                Select Restaurant Branch ({stores.length} Available)
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.72rem', display: 'block', mt: 0.2 }}>
+                Dishes, prices, and active kitchen queue update dynamically
+              </Typography>
+            </Box>
+
             {stores.map((s) => {
+              const isSelected = s.id === (selectedStoreId || stores[0]?.id);
               const isActive = s.is_active !== false;
+
               return (
-                <MenuItem key={s.id} value={s.id} disabled={!isActive && !isAdmin}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <StorefrontIcon sx={{ fontSize: 18, color: isActive ? '#FF7A00' : '#94A3B8' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: isActive ? '#0F172A' : '#94A3B8' }}>
-                        {s.name}
-                      </Typography>
+                <MenuItem
+                  key={s.id}
+                  value={s.id}
+                  disabled={!isActive && !isAdmin}
+                  sx={{
+                    py: 1.2,
+                    px: 2,
+                    my: 0.4,
+                    mx: 0.8,
+                    borderRadius: '10px',
+                    backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                    border: isSelected ? '1px solid #BFDBFE' : '1px solid transparent',
+                    '&:hover': {
+                      backgroundColor: isSelected ? '#EFF6FF' : '#FFF7ED',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                      <Box
+                        sx={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: '8px',
+                          backgroundColor: isSelected ? '#3B82F6' : '#FFEDD5',
+                          color: isSelected ? '#FFFFFF' : '#EA580C',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <StorefrontIcon sx={{ fontSize: 18 }} />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: isSelected ? 800 : 700, color: '#0F172A', fontSize: '0.88rem' }}>
+                          {s.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>
+                          📍 {s.location || 'Branch Kitchen'}
+                        </Typography>
+                      </Box>
                     </Box>
-                    {!isActive && (
-                      <Chip
-                        label="Inactive"
-                        size="small"
-                        sx={{ fontSize: '0.65rem', height: 18, backgroundColor: '#F1F5F9', color: '#64748B' }}
-                      />
-                    )}
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                      {isSelected ? (
+                        <Chip
+                          icon={<CheckCircleIcon sx={{ fontSize: '14px !important', color: '#1D4ED8 !important' }} />}
+                          label="Selected"
+                          size="small"
+                          sx={{
+                            height: 22,
+                            backgroundColor: '#DBEAFE',
+                            color: '#1D4ED8',
+                            fontWeight: 800,
+                            fontSize: '0.7rem',
+                            borderRadius: '6px',
+                          }}
+                        />
+                      ) : isActive ? (
+                        <Chip
+                          label="Open Now"
+                          size="small"
+                          sx={{
+                            height: 20,
+                            backgroundColor: '#DCFCE7',
+                            color: '#15803D',
+                            fontWeight: 700,
+                            fontSize: '0.68rem',
+                            borderRadius: '6px',
+                          }}
+                        />
+                      ) : (
+                        <Chip
+                          label="Inactive"
+                          size="small"
+                          sx={{
+                            height: 20,
+                            backgroundColor: '#F1F5F9',
+                            color: '#64748B',
+                            fontWeight: 600,
+                            fontSize: '0.68rem',
+                            borderRadius: '6px',
+                          }}
+                        />
+                      )}
+                    </Box>
                   </Box>
                 </MenuItem>
               );
@@ -150,20 +299,11 @@ export function PosHeader({
           </Select>
         </FormControl>
 
-        {/* Cart Icon Badge */}
-        <Tooltip title="View Cart / Checkout">
-          <IconButton
-            onClick={onOpenCheckout}
-            sx={{
-              width: { xs: 40, sm: 44 },
-              height: { xs: 40, sm: 44 },
-              borderRadius: '12px',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              color: '#1E293B',
-              '&:hover': { backgroundColor: '#F1F5F9' },
-            }}
-          >
+        {/* Highlighted Interactive Cart Button */}
+        <Button
+          onClick={onOpenCheckout}
+          id="pos-cart-button"
+          startIcon={
             <Badge
               badgeContent={totalCartCount}
               color="error"
@@ -171,15 +311,67 @@ export function PosHeader({
                 '& .MuiBadge-badge': {
                   backgroundColor: '#EF4444',
                   color: '#FFFFFF',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: '0.72rem',
+                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)',
                 },
               }}
             >
-              <ShoppingCartOutlinedIcon sx={{ fontSize: { xs: 20, sm: 22 } }} />
+              <ShoppingCartIcon sx={{ fontSize: 22, color: totalCartCount > 0 ? '#FFFFFF' : '#0F172A' }} />
             </Badge>
-          </IconButton>
-        </Tooltip>
+          }
+          sx={{
+            background: totalCartCount > 0
+              ? 'linear-gradient(135deg, #059669 0%, #10B981 100%)'
+              : '#FFFFFF',
+            color: totalCartCount > 0 ? '#FFFFFF' : '#0F172A',
+            border: totalCartCount > 0 ? '1.5px solid #059669' : '2px solid #0F172A',
+            borderRadius: '12px',
+            px: { xs: 1.8, sm: 2.2 },
+            py: { xs: 0.8, sm: 1 },
+            fontWeight: 800,
+            fontSize: { xs: '0.82rem', sm: '0.88rem' },
+            textTransform: 'none',
+            whiteSpace: 'nowrap',
+            boxShadow: totalCartCount > 0
+              ? '0 4px 16px rgba(16, 185, 129, 0.4), 0 0 0 2px rgba(16, 185, 129, 0.2)'
+              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              background: totalCartCount > 0
+                ? 'linear-gradient(135deg, #047857 0%, #059669 100%)'
+                : '#0F172A',
+              color: '#FFFFFF',
+              transform: 'translateY(-1px)',
+              boxShadow: totalCartCount > 0
+                ? '0 6px 20px rgba(16, 185, 129, 0.55)'
+                : '0 4px 14px rgba(15, 23, 42, 0.25)',
+              '& .MuiSvgIcon-root': {
+                color: '#FFFFFF',
+              },
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 800, fontSize: { xs: '0.82rem', sm: '0.88rem' } }}>
+              Cart
+            </Typography>
+            {totalCartCount > 0 && totalCartAmount > 0 && (
+              <Chip
+                label={`₹${totalCartAmount.toFixed(0)}`}
+                size="small"
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  height: 22,
+                  borderRadius: '6px',
+                }}
+              />
+            )}
+          </Box>
+        </Button>
 
         {/* Best Offer Deals Button */}
         <Button
