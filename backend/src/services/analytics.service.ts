@@ -89,28 +89,28 @@ export class AnalyticsService {
     const revenuePerStorePromise = isStoreFiltered
       ? prisma.$queryRaw<StoreRevenueStat[]>`
           SELECT
-            o."store_id" AS store_id,
+            s."id" AS store_id,
             COALESCE(s."name", 'Unnamed Store') AS store_name,
-            COUNT(o.*)::int AS total_orders,
+            COUNT(o.id)::int AS total_orders,
             COALESCE(ROUND(SUM(o."total_amount")::numeric, 2), 0)::float AS total_revenue,
             COALESCE(ROUND(AVG(o."total_amount")::numeric, 2), 0)::float AS avg_order_value
-          FROM "orders" o
-          LEFT JOIN "stores" s ON s."id" = o."store_id"
-          WHERE o."store_id" = ${storeId}::uuid
-          GROUP BY o."store_id", s."name"
+          FROM "stores" s
+          LEFT JOIN "orders" o ON o."store_id" = s."id"
+          WHERE s."id" = ${storeId}::uuid
+          GROUP BY s."id", s."name"
           ORDER BY total_revenue DESC;
         `
       : prisma.$queryRaw<StoreRevenueStat[]>`
           SELECT
-            o."store_id" AS store_id,
+            s."id" AS store_id,
             COALESCE(s."name", 'Unnamed Store') AS store_name,
-            COUNT(o.*)::int AS total_orders,
+            COUNT(o.id)::int AS total_orders,
             COALESCE(ROUND(SUM(o."total_amount")::numeric, 2), 0)::float AS total_revenue,
             COALESCE(ROUND(AVG(o."total_amount")::numeric, 2), 0)::float AS avg_order_value
-          FROM "orders" o
-          LEFT JOIN "stores" s ON s."id" = o."store_id"
-          GROUP BY o."store_id", s."name"
-          ORDER BY total_revenue DESC;
+          FROM "stores" s
+          LEFT JOIN "orders" o ON o."store_id" = s."id"
+          GROUP BY s."id", s."name"
+          ORDER BY total_revenue DESC, total_orders DESC;
         `;
 
     const topSellingItemsPromise = isStoreFiltered
@@ -151,7 +151,7 @@ export class AnalyticsService {
           SELECT
             COUNT(*)::int AS total_orders,
             COALESCE(ROUND(SUM("total_amount")::numeric, 2), 0)::float AS total_revenue,
-            COUNT(DISTINCT "store_id")::int AS total_stores
+            (SELECT COUNT(*)::int FROM "stores") AS total_stores
           FROM "orders";
         `;
 
