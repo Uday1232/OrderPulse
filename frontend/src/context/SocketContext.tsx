@@ -244,6 +244,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           timestamp: new Date().toISOString(),
           read: false,
         });
+
+        // Persist in customer local storage history for immediate sync
+        try {
+          const existing: Order[] = JSON.parse(localStorage.getItem('sp_my_orders') || '[]');
+          const updated = [newOrder, ...existing.filter((o) => o.id !== newOrder.id)];
+          localStorage.setItem('sp_my_orders', JSON.stringify(updated));
+        } catch {}
       }
     };
 
@@ -327,6 +334,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           timestamp: new Date().toISOString(),
           read: false,
         });
+
+        // Update stored customer order with new status
+        try {
+          const existing: Order[] = JSON.parse(localStorage.getItem('sp_my_orders') || '[]');
+          const updated = existing.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o));
+          localStorage.setItem('sp_my_orders', JSON.stringify(updated));
+        } catch {}
       }
     };
 

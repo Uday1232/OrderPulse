@@ -32,6 +32,13 @@ router.get(
   OrderController.getMyOrders
 );
 
+// GET /orders/customer/my-orders - Alias for my-orders
+router.get(
+  '/customer/my-orders',
+  authenticate,
+  OrderController.getMyOrders
+);
+
 // GET /orders/:id - Fetch single order by UUID
 router.get(
   '/:id',

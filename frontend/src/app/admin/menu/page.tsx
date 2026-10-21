@@ -30,6 +30,7 @@ import {
   Switch,
   Tooltip,
   TablePagination,
+  LinearProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -61,6 +62,7 @@ export default function MenuItemsManagementPage() {
     allItems,
     categories,
     isLoading,
+    isFetching,
     isError,
     error,
     createItem,
@@ -325,10 +327,24 @@ export default function MenuItemsManagementPage() {
           />
         </Box>
 
-        {isLoading && (
+        {/* Initial empty loading spinner */}
+        {isLoading && allItems.length === 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
             <CircularProgress sx={{ color: '#3B82F6' }} />
           </Box>
+        )}
+
+        {/* Subtle non-blocking progress bar when switching stores */}
+        {isFetching && allItems.length > 0 && (
+          <LinearProgress
+            sx={{
+              height: 4,
+              borderRadius: 2,
+              mb: 1.5,
+              backgroundColor: '#EFF6FF',
+              '& .MuiLinearProgress-bar': { backgroundColor: '#3B82F6' },
+            }}
+          />
         )}
 
         {isError && (
@@ -337,7 +353,7 @@ export default function MenuItemsManagementPage() {
           </Alert>
         )}
 
-        {/* Menu Items Table matching Image 2 Screen 7 */}
+        {/* Menu Items Table */}
         <TableContainer
           component={Paper}
           sx={{
@@ -346,6 +362,8 @@ export default function MenuItemsManagementPage() {
             boxShadow: 'none',
             backgroundColor: '#FFFFFF',
             overflowX: 'auto',
+            opacity: isFetching ? 0.75 : 1,
+            transition: 'opacity 0.2s ease',
           }}
         >
           <Table sx={{ minWidth: 600 }}>

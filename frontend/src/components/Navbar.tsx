@@ -51,7 +51,10 @@ export function Navbar() {
     return null;
   }
 
-  const NAV_LINKS = user
+  // "My Orders" is exclusively for regular customer accounts, not for store admins/superadmins
+  const isCustomerOnly = Boolean(user && user.role === 'USER');
+
+  const NAV_LINKS = isCustomerOnly
     ? [
         { label: 'My Orders', path: '/my-orders', icon: <ShoppingBagIcon sx={{ fontSize: 18 }} /> },
       ]

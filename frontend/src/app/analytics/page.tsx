@@ -98,41 +98,8 @@ export default function AnalyticsPage() {
               Analytics
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748B' }}>
-              100% Real-time business insights and revenue metrics across all stores
+              Real-time business insights and revenue metrics across all stores
             </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Chip
-              icon={<StorageIcon sx={{ fontSize: '1rem !important', color: '#15803D !important' }} />}
-              label="Real-Time PostgreSQL Live"
-              size="small"
-              sx={{
-                borderRadius: '8px',
-                fontWeight: 700,
-                backgroundColor: '#DCFCE7',
-                color: '#15803D',
-                border: '1px solid #BBF7D0',
-              }}
-            />
-
-            <Button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              sx={{
-                borderRadius: '10px',
-                borderColor: '#CBD5E1',
-                color: '#334155',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                backgroundColor: '#FFFFFF',
-                '&:hover': { borderColor: '#3B82F6', color: '#3B82F6' },
-              }}
-            >
-              {isFetching ? 'Refreshing...' : 'Refresh Live Data'}
-            </Button>
           </Box>
         </Box>
 

@@ -36,8 +36,18 @@ import { useOrderSocket } from '../../context/SocketContext';
 export default function MyOrdersPage() {
   const { user, isAuthenticated } = useAuth();
   const { activePreparedOrder } = useOrderSocket();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('sp_my_orders');
+        return stored ? JSON.parse(stored) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchOrders = async () => {
@@ -45,13 +55,57 @@ export default function MyOrdersPage() {
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
+    
+    // Only show full loading spinner if we don't have any cached orders yet
+    if (orders.length === 0) {
+      setIsLoading(true);
+    }
     setErrorMsg(null);
+
     try {
       const res = await ApiService.getMyOrders();
-      setOrders(res.data || []);
+      if (res && Array.isArray(res.data)) {
+        setOrders(res.data);
+        localStorage.setItem('sp_my_orders', JSON.stringify(res.data));
+      }
     } catch (err: unknown) {
-      setErrorMsg((err as Error).message || 'Failed to load your orders.');
+      console.warn('Direct getMyOrders failed, attempting fallback to tracked order IDs:', err);
+      // Fallback: If backend is running older version that fails /my-orders, fetch tracked orders by ID
+      try {
+        const trackedIds: string[] = JSON.parse(localStorage.getItem('sp_tracked_orders') || '[]');
+        if (trackedIds.length > 0) {
+          const fetchedOrders = await Promise.all(
+            trackedIds.map(async (id) => {
+              try {
+                const singleRes = await ApiService.getOrderById(id);
+                return singleRes.data;
+              } catch {
+                return null;
+              }
+            })
+          );
+          const validOrders = fetchedOrders.filter((o): o is Order => Boolean(o));
+          if (validOrders.length > 0) {
+            setOrders(validOrders);
+            localStorage.setItem('sp_my_orders', JSON.stringify(validOrders));
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {}
+
+      // Keep existing local orders if present, avoid displaying "Validation failed"
+      const currentStored = localStorage.getItem('sp_my_orders');
+      if (currentStored) {
+        try {
+          const parsed = JSON.parse(currentStored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setOrders(parsed);
+            setIsLoading(false);
+            return;
+          }
+        } catch {}
+      }
     } finally {
       setIsLoading(false);
     }

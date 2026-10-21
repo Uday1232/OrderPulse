@@ -33,13 +33,14 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useOfferStore } from '../../store/useOfferStore';
 import { useOrderSocket } from '../../context/SocketContext';
 import { ApiService } from '../../services/api';
-import { PaymentMethod } from '../../types/order';
+import { PaymentMethod, Order } from '../../types/order';
 
 interface PosCheckoutModalProps {
   open: boolean;
@@ -94,7 +95,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      setErrorMessage('Please sign in or register before placing your order.');
+      setErrorMessage('Authentication required: Please sign in or create an account to place your order.');
       return;
     }
     if (items.length === 0) return;
@@ -120,6 +121,14 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
 
       const res = await ApiService.createOrder(orderPayload);
       trackOrder(res.data.id);
+
+      // Save to local storage for instant zero-lag display in My Orders
+      try {
+        const existing: Order[] = JSON.parse(localStorage.getItem('sp_my_orders') || '[]');
+        const updated = [res.data, ...existing.filter((o) => o.id !== res.data.id)];
+        localStorage.setItem('sp_my_orders', JSON.stringify(updated));
+      } catch {}
+
       setOrderSuccess({
         id: res.data.id,
         items: items.map((it) => ({ ...it })),
@@ -321,37 +330,83 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
         ) : (
           <Box>
             {!user && (
-              <Alert
-                severity="warning"
-                action={
-                  <Button
-                    component={Link}
-                    href="/login"
-                    size="small"
-                    sx={{
-                      color: '#B45309',
-                      fontWeight: 800,
-                      backgroundColor: '#FDE68A',
-                      borderRadius: '8px',
-                      px: 1.5,
-                      textTransform: 'none',
-                      '&:hover': { backgroundColor: '#FCD34D' },
-                    }}
-                  >
-                    Sign In / Sign Up
-                  </Button>
-                }
+              <Paper
+                elevation={0}
                 sx={{
-                  mb: 2,
-                  borderRadius: '12px',
-                  backgroundColor: '#FEF3C7',
-                  color: '#92400E',
-                  border: '1px solid #FDE68A',
-                  '& .MuiAlert-icon': { color: '#D97706' },
+                  p: 2.5,
+                  mb: 3,
+                  borderRadius: '16px',
+                  backgroundColor: '#FFFBEB',
+                  border: '2px solid #FCD34D',
+                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.12)',
                 }}
               >
-                You must be signed in to place an order.
-              </Alert>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '12px',
+                      backgroundColor: '#FEF3C7',
+                      color: '#D97706',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <LockOutlinedIcon sx={{ fontSize: 24 }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#92400E', mb: 0.5 }}>
+                      Sign In or Register Required to Place Order
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#B45309', mb: 2, fontSize: '0.85rem', lineHeight: 1.5 }}>
+                      You must be signed in to place an order. Sign in to your account or create a new one to enable live kitchen status tracking and digital receipts.
+                    </Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                      <Button
+                        component={Link}
+                        href="/login"
+                        variant="contained"
+                        size="small"
+                        sx={{
+                          backgroundColor: '#D97706',
+                          color: '#FFFFFF',
+                          fontWeight: 700,
+                          borderRadius: '10px',
+                          px: 2.5,
+                          py: 0.8,
+                          textTransform: 'none',
+                          boxShadow: '0 2px 8px rgba(217, 119, 6, 0.3)',
+                          '&:hover': { backgroundColor: '#B45309' },
+                        }}
+                      >
+                        Sign In Now
+                      </Button>
+                      <Button
+                        component={Link}
+                        href="/register"
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          borderColor: '#D97706',
+                          color: '#B45309',
+                          fontWeight: 700,
+                          borderRadius: '10px',
+                          px: 2.5,
+                          py: 0.8,
+                          textTransform: 'none',
+                          backgroundColor: '#FFFFFF',
+                          '&:hover': { backgroundColor: '#FEF3C7', borderColor: '#B45309' },
+                        }}
+                      >
+                        Create Account (Sign Up)
+                      </Button>
+                    </Stack>
+                  </Box>
+                </Box>
+              </Paper>
             )}
 
             {errorMessage && (
@@ -674,24 +729,43 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
             Cancel
           </Button>
           {!user ? (
-            <Button
-              component={Link}
-              href="/login"
-              variant="contained"
-              sx={{
-                backgroundColor: '#FF7A00',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                borderRadius: '12px',
-                px: 3.5,
-                py: 1.2,
-                boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
-                '&:hover': { backgroundColor: '#E06500' },
-              }}
-            >
-              Sign In to Place Order
-            </Button>
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                component={Link}
+                href="/login"
+                variant="contained"
+                sx={{
+                  backgroundColor: '#FF7A00',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  borderRadius: '12px',
+                  px: 3,
+                  py: 1.1,
+                  boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
+                  '&:hover': { backgroundColor: '#E06500' },
+                }}
+              >
+                Sign In to Place Order
+              </Button>
+              <Button
+                component={Link}
+                href="/register"
+                variant="outlined"
+                sx={{
+                  borderColor: '#CBD5E1',
+                  color: '#334155',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  borderRadius: '12px',
+                  px: 2.5,
+                  py: 1.1,
+                  '&:hover': { backgroundColor: '#F8FAFC', borderColor: '#94A3B8' },
+                }}
+              >
+                Sign Up
+              </Button>
+            </Stack>
           ) : (
             <Button
               onClick={handlePlaceOrder}

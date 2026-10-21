@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Box,
   Typography,
@@ -23,6 +24,7 @@ import LocalPizzaIcon from '@mui/icons-material/LocalPizza';
 import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 import { PosSidebar } from '../../components/pos/PosSidebar';
 import { PosHeader } from '../../components/pos/PosHeader';
@@ -35,6 +37,7 @@ import { useOrderSocket } from '../../context/SocketContext';
 import { useMenu } from '../../hooks/useMenu';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useCartStore } from '../../store/useCartStore';
+import { useAuth } from '../../hooks/useAuth';
 
 const MOBILE_CATEGORIES = [
   { label: 'All', icon: <RestaurantIcon sx={{ fontSize: 16 }} /> },
@@ -48,6 +51,7 @@ const MOBILE_CATEGORIES = [
 ];
 
 export default function PosPage() {
+  const { user } = useAuth();
   const { currentStoreId, setCurrentStoreId, activePreparedOrder, dismissPreparedOrder } = useOrderSocket();
   const { allItems, isLoading, isError, error } = useMenu(currentStoreId);
 
@@ -203,7 +207,7 @@ export default function PosPage() {
                     Order #{activePreparedOrder.id.slice(0, 8)} is PREPARED!
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.95, fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
-                    Please head to the pickup counter to collect your meal (${Number(activePreparedOrder.total_amount || 0).toFixed(2)}).
+                    Please head to the pickup counter to collect your meal (₹{Number(activePreparedOrder.total_amount || 0).toFixed(2)}).
                   </Typography>
                 </Box>
               </Box>
@@ -224,6 +228,90 @@ export default function PosPage() {
               >
                 Got It!
               </Button>
+            </Box>
+          )}
+
+          {/* Guest User Authentication Banner */}
+          {!user && (
+            <Box
+              sx={{
+                mb: 2.5,
+                p: { xs: 1.5, sm: 2 },
+                px: { xs: 2, sm: 2.5 },
+                borderRadius: '16px',
+                backgroundColor: '#FFFBEB',
+                border: '1px solid #FCD34D',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '10px',
+                    backgroundColor: '#FEF3C7',
+                    color: '#D97706',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <LockOutlinedIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#92400E', lineHeight: 1.2 }}>
+                    Sign in or Register to Place Orders
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#B45309', display: 'block' }}>
+                    You are currently browsing as a guest. Please sign in or register before placing your order.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  component={Link}
+                  href="/login"
+                  variant="contained"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#D97706',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    borderRadius: '8px',
+                    px: 2,
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#B45309' },
+                  }}
+                >
+                  Sign In
+                </Button>
+                <Button
+                  component={Link}
+                  href="/register"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderColor: '#D97706',
+                    color: '#B45309',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    borderRadius: '8px',
+                    px: 2,
+                    textTransform: 'none',
+                    backgroundColor: '#FFFFFF',
+                    '&:hover': { backgroundColor: '#FEF3C7' },
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </Box>
             </Box>
           )}
 

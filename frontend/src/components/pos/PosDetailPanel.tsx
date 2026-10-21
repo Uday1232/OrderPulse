@@ -178,7 +178,7 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
           </Box>
         </Box>
 
-        {/* About Description */}
+        {/* Description */}
         <Box sx={{ my: 2.5 }}>
           <Typography
             variant="subtitle2"
@@ -189,7 +189,7 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
               fontSize: '0.9rem',
             }}
           >
-            About Description:
+            Description:
           </Typography>
           <Typography
             variant="body2"

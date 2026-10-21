@@ -307,7 +307,7 @@ export class ApiService {
   }
 
   static async getMyOrders(): Promise<{ success: boolean; data: Order[] }> {
-    const res = await fetch(`${API_BASE_URL}/api/v1/orders/my-orders`, {
+    let res = await fetch(`${API_BASE_URL}/api/v1/orders/my-orders`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -317,6 +317,21 @@ export class ApiService {
     });
 
     if (!res.ok) {
+      // Fallback check to alias route
+      try {
+        const fallbackRes = await fetch(`${API_BASE_URL}/api/v1/orders/customer/my-orders`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+          cache: 'no-store',
+        });
+        if (fallbackRes.ok) {
+          return fallbackRes.json();
+        }
+      } catch {}
+
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `Failed to fetch your orders: HTTP ${res.status}`);
     }

@@ -20,6 +20,7 @@ export function useMenu(storeId: string) {
     },
     enabled: Boolean(storeId),
     staleTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 
   const createItemMutation = useMutation({
@@ -80,6 +81,7 @@ export function useMenu(storeId: string) {
     categories,
     allItems,
     isLoading: menuQuery.isLoading,
+    isFetching: menuQuery.isFetching,
     isError: menuQuery.isError,
     error: menuQuery.error,
     fromCache: menuQuery.data ? true : false,
