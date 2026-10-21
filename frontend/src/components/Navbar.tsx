@@ -61,13 +61,12 @@ export function Navbar() {
     : [];
 
   const ADMIN_LINKS = [
-    { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 18 }} /> },
+    { label: 'Analytics Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 18 }} /> },
     { label: 'Orders List', path: '/orders', icon: <ViewListIcon sx={{ fontSize: 18 }} /> },
     { label: 'Menu Items', path: '/admin/menu', icon: <RestaurantMenuIcon sx={{ fontSize: 18 }} /> },
     { label: 'Stores', path: '/admin/stores', icon: <StoreIcon sx={{ fontSize: 18 }} /> },
     { label: 'Offers & Deals', path: '/admin/offers', icon: <LocalOfferIcon sx={{ fontSize: 18 }} /> },
     { label: 'Staff & Roles', path: '/admin/users', icon: <PeopleAltIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Analytics', path: '/analytics', icon: <BarChartIcon sx={{ fontSize: 18 }} /> },
     { label: 'Archive', path: '/archive', icon: <ArchiveIcon sx={{ fontSize: 18 }} /> },
   ];
 

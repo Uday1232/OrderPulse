@@ -385,8 +385,18 @@ export class ApiService {
     return res.json();
   }
 
-  static async getAnalytics(forceRefresh = false): Promise<AnalyticsResponse> {
-    const url = `${API_BASE_URL}/api/v1/analytics${forceRefresh ? '?refresh=true' : ''}`;
+  static async getAnalytics(
+    params?: boolean | { forceRefresh?: boolean; store_id?: string }
+  ): Promise<AnalyticsResponse> {
+    const forceRefresh = typeof params === 'boolean' ? params : params?.forceRefresh || false;
+    const storeId = typeof params === 'object' && params?.store_id && params.store_id !== 'all' ? params.store_id : undefined;
+
+    const query = new URLSearchParams();
+    if (forceRefresh) query.append('refresh', 'true');
+    if (storeId) query.append('store_id', storeId);
+
+    const qs = query.toString();
+    const url = `${API_BASE_URL}/api/v1/analytics${qs ? `?${qs}` : ''}`;
     const res = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
