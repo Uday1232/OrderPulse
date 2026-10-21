@@ -51,8 +51,8 @@ export function Navbar() {
     return null;
   }
 
-  // "My Orders" is exclusively for regular customer accounts, not for store admins/superadmins
-  const isCustomerOnly = Boolean(user && user.role === 'USER');
+  // "My Orders" is exclusively for regular customer accounts, strictly not for store admins or superadmins
+  const isCustomerOnly = Boolean(user && user.role === 'USER' && !isAdmin);
 
   const NAV_LINKS = isCustomerOnly
     ? [

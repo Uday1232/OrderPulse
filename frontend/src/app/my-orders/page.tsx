@@ -69,8 +69,7 @@ export default function MyOrdersPage() {
         localStorage.setItem('sp_my_orders', JSON.stringify(res.data));
       }
     } catch (err: unknown) {
-      console.warn('Direct getMyOrders failed, attempting fallback to tracked order IDs:', err);
-      // Fallback: If backend is running older version that fails /my-orders, fetch tracked orders by ID
+      // Fallback 1: If tracked orders exist in localStorage, fetch them by ID
       try {
         const trackedIds: string[] = JSON.parse(localStorage.getItem('sp_tracked_orders') || '[]');
         if (trackedIds.length > 0) {
@@ -94,7 +93,42 @@ export default function MyOrdersPage() {
         }
       } catch {}
 
-      // Keep existing local orders if present, avoid displaying "Validation failed"
+      // Fallback 2: Direct recovery across stores for user's account
+      try {
+        const storesRes = await ApiService.getStores();
+        const storesList = storesRes.data || [];
+        const matchedOrders: Order[] = [];
+
+        await Promise.all(
+          storesList.map(async (store) => {
+            try {
+              const res = await ApiService.getOrders({ store_id: store.id, limit: 50 });
+              const storeOrders = Array.isArray(res.data)
+                ? res.data
+                : ((res.data as any)?.orders || []);
+
+              storeOrders.forEach((ord: Order) => {
+                if (ord.user_id === user.id) {
+                  matchedOrders.push({
+                    ...ord,
+                    store: ord.store || { id: store.id, name: store.name, location: store.location },
+                  });
+                }
+              });
+            } catch {}
+          })
+        );
+
+        if (matchedOrders.length > 0) {
+          matchedOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setOrders(matchedOrders);
+          localStorage.setItem('sp_my_orders', JSON.stringify(matchedOrders));
+          setIsLoading(false);
+          return;
+        }
+      } catch {}
+
+      // Fallback 3: Keep existing local orders if present, avoid displaying "Validation failed"
       const currentStored = localStorage.getItem('sp_my_orders');
       if (currentStored) {
         try {
