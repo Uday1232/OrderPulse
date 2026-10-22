@@ -1,7 +1,7 @@
 /**
  * Utility to resolve media and uploaded image URLs across frontend and backend dev/production environments.
  */
-export function getMediaUrl(url?: string | null, fallback = '/images/food/burger.jpg'): string {
+export function getMediaUrl(url?: string | null, fallback = '/images/menu/master_burger.jpg'): string {
   if (!url || typeof url !== 'string' || !url.trim()) {
     return fallback;
   }
@@ -23,4 +23,20 @@ export function getMediaUrl(url?: string | null, fallback = '/images/food/burger
 
   // Local frontend assets (in public/ directory)
   return trimmed;
+}
+
+/**
+ * Maps category names to master high-resolution fallback photos
+ */
+export function getCategoryFallback(categoryName?: string): string {
+  const cat = (categoryName || '').toLowerCase();
+  if (cat.includes('mania')) return '/images/menu/master_veg_mania.jpg';
+  if (cat.includes('sandwich')) return '/images/menu/master_sandwich.jpg';
+  if (cat.includes('pizza')) return '/images/menu/master_veg_pizza.jpg';
+  if (cat.includes('burger')) return '/images/menu/master_burger.jpg';
+  if (cat.includes('fries')) return '/images/menu/master_french_fries.jpg';
+  if (cat.includes('macaroni')) return '/images/menu/master_macaroni.jpg';
+  if (cat.includes('coffee')) return '/images/menu/master_hot_coffee.jpg';
+  if (cat.includes('tea')) return '/images/menu/master_ice_tea.jpg';
+  return '/images/menu/master_burger.jpg';
 }

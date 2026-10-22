@@ -1,23 +1,40 @@
 import { prisma } from '../config/db';
 
 async function main() {
-  const users = await prisma.user.findMany({
-    select: { id: true, email: true, name: true, role: true, address: true, created_at: true }
+  const stores = await prisma.store.findMany({
+    include: {
+      categories: {
+        include: { items: true },
+        orderBy: { name: 'asc' },
+      },
+    },
+    orderBy: { name: 'asc' },
   });
-  console.log('=== USERS IN DATABASE (TO PRESERVE) ===');
-  console.log(`Total: ${users.length}`);
-  users.forEach(u => console.log(`• [${u.role}] ${u.name} <${u.email}> (Address: ${u.address || 'none'})`));
 
-  const stores = await prisma.store.findMany({ select: { id: true, name: true } });
-  const items = await prisma.item.count();
-  const orders = await prisma.order.count();
-  const archives = await prisma.orderArchive.count();
+  console.log('=== VERIFYING SEEDED STORES & MENUS ===');
+  console.log(`Total Stores: ${stores.length}`);
 
-  console.log('\n=== SAMPLE DATA TO PURGE ===');
-  console.log(`Stores (${stores.length}):`, stores.map(s => s.name).join(', '));
-  console.log(`Menu Items: ${items}`);
-  console.log(`Active Orders: ${orders}`);
-  console.log(`Archived Orders: ${archives}`);
+  for (const s of stores) {
+    console.log(`\n🏪 Store: ${s.name} (${s.location})`);
+    console.log(`   Categories count: ${s.categories.length}`);
+    for (const c of s.categories) {
+      console.log(`   📂 [${c.name}] (${c.items.length} items):`);
+      for (const it of c.items) {
+        console.log(`      - ${it.name} | ₹${it.price} | Image: ${it.image_url}`);
+      }
+    }
+  }
+
+  const totalUsers = await prisma.user.count();
+  const totalStores = await prisma.store.count();
+  const totalCategories = await prisma.category.count();
+  const totalItems = await prisma.item.count();
+
+  console.log('\n=== TOTAL COUNTS SUMMARY ===');
+  console.log(`Users (Intact): ${totalUsers}`);
+  console.log(`Stores: ${totalStores}`);
+  console.log(`Categories: ${totalCategories}`);
+  console.log(`Menu Items: ${totalItems}`);
 }
 
 main()

@@ -6,7 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { Item } from '../../types/order';
 import { useCartStore } from '../../store/useCartStore';
-import { getMediaUrl } from '../../utils/imageUrl';
+import { getMediaUrl, getCategoryFallback } from '../../utils/imageUrl';
 
 interface PosItemCardProps {
   item: Item;
@@ -68,17 +68,17 @@ export function PosItemCard({ item, isSelected, onInspect }: PosItemCardProps) {
       >
         <Box
           component="img"
-          src={getMediaUrl(item.image_url, '/images/food/burger.jpg')}
+          src={getMediaUrl(item.image_url, getCategoryFallback(item.category?.name))}
           alt={item.name}
           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-            e.currentTarget.src = '/images/food/burger.jpg';
+            e.currentTarget.src = getCategoryFallback(item.category?.name);
           }}
           sx={{
-            maxWidth: '100%',
-            maxHeight: '100%',
-            objectFit: 'contain',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
             borderRadius: '12px',
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.12))',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.08))',
             transition: 'transform 0.3s ease',
             '&:hover': {
               transform: 'scale(1.05)',

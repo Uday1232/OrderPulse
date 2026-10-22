@@ -388,7 +388,7 @@ export default function MenuItemsManagementPage() {
                         src={getMediaUrl(item.image_url)}
                         alt={item.name}
                         onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                          e.currentTarget.src = '/images/food/burger.jpg';
+                          e.currentTarget.src = '/images/menu/master_burger.jpg';
                         }}
                         sx={{
                           width: 44,

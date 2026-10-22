@@ -16,7 +16,7 @@ import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { Item } from '../../types/order';
 import { useCartStore } from '../../store/useCartStore';
-import { getMediaUrl } from '../../utils/imageUrl';
+import { getMediaUrl, getCategoryFallback } from '../../utils/imageUrl';
 
 interface PosDetailPanelProps {
   item: Item | null;
@@ -110,10 +110,10 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
         >
           <Box
             component="img"
-            src={getMediaUrl(item.image_url, '/images/food/sandwich.jpg')}
+            src={getMediaUrl(item.image_url, getCategoryFallback(item.category?.name))}
             alt={item.name}
             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-              e.currentTarget.src = '/images/food/sandwich.jpg';
+              e.currentTarget.src = getCategoryFallback(item.category?.name);
             }}
             sx={{
               width: '100%',

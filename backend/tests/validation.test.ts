@@ -14,6 +14,7 @@ describe('Validation Schemas (Zod)', () => {
       const validPayload = {
         store_id: sampleUuid,
         payment_method: 'UPI',
+        delivery_address: '123 Test Street, FC Road, Pune',
         items: [
           { name: 'Margherita Pizza', qty: 2, price: 14.99 },
           { name: 'Espresso', qty: 1, price: 3.5 },

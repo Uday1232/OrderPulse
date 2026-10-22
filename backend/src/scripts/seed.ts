@@ -1,488 +1,761 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../config/db';
-import { RedisService } from '../services/redis.service';
+import { redis } from '../config/redis';
 import { logger } from '../utils/logger';
 
-async function seed() {
-  logger.info('Starting database seed with 4 Western Stores, perfectly matched photos & menus, and Real-Time Analytics...');
+interface MenuItemSeed {
+  name: string;
+  price: number;
+  image: string;
+  description: string;
+}
 
-  // 1. Clean existing records in correct foreign key order
-  await prisma.orderArchive.deleteMany({});
-  await prisma.order.deleteMany({});
-  await prisma.item.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.store.deleteMany({});
-  await prisma.user.deleteMany({});
+interface CategorySeed {
+  name: string;
+  items: MenuItemSeed[];
+}
 
-  logger.info('Cleared existing database records');
+interface StoreSeed {
+  name: string;
+  location: string;
+  adminEmail: string;
+  categories: CategorySeed[];
+}
 
-  // 2. Create Users (SuperAdmin, Store Admins, and Customers)
+const STORES_DATA: StoreSeed[] = [
+  {
+    name: 'Crave Corner Café',
+    location: 'FC Road, Shivajinagar, Pune, Maharashtra',
+    adminEmail: 'central_admin@storepulse.com',
+    categories: [
+      {
+        name: 'Veg. Mania',
+        items: [
+          {
+            name: 'Loaded Veg Mania',
+            price: 149,
+            image: '/images/menu/store1_crave_corner_pune_veg_mania_1.jpg',
+            description: 'Fresh assortment of farm-fresh crisp vegetables baked with signature seasoning and cheese.',
+          },
+          {
+            name: 'Paneer Tikka Mania',
+            price: 179,
+            image: '/images/menu/store1_crave_corner_pune_veg_mania_2.jpg',
+            description: 'Char-grilled spiced paneer cubes topped with aromatic herbs and melted mozzarella.',
+          },
+        ],
+      },
+      {
+        name: 'Sandwich',
+        items: [
+          {
+            name: 'Classic Veg Sandwich',
+            price: 99,
+            image: '/images/menu/store1_crave_corner_pune_sandwich_1.jpg',
+            description: 'Crisp cucumbers, juicy tomatoes, and mint chutney layered between toasted bread.',
+          },
+          {
+            name: 'Cheese Corn Sandwich',
+            price: 129,
+            image: '/images/menu/store1_crave_corner_pune_sandwich_2.jpg',
+            description: 'Sweet corn kernels and molten cheese grilled crisp to golden brown perfection.',
+          },
+        ],
+      },
+      {
+        name: 'Veg. Pizza',
+        items: [
+          {
+            name: 'Farmhouse Pizza',
+            price: 219,
+            image: '/images/menu/store1_crave_corner_pune_veg_pizza_1.jpg',
+            description: 'Crisp crust loaded with bell peppers, onions, tomatoes, and mushrooms.',
+          },
+          {
+            name: 'Margherita Pizza',
+            price: 179,
+            image: '/images/menu/store1_crave_corner_pune_veg_pizza_2.jpg',
+            description: 'Authentic pizza sauce, creamy mozzarella, and aromatic fresh sweet basil.',
+          },
+        ],
+      },
+      {
+        name: 'Burger',
+        items: [
+          {
+            name: 'Crispy Veg Burger',
+            price: 119,
+            image: '/images/menu/store1_crave_corner_pune_burger_1.jpg',
+            description: 'Crunchy spiced vegetable patty with iceberg lettuce and creamy house mayo.',
+          },
+          {
+            name: 'Cheese Paneer Burger',
+            price: 159,
+            image: '/images/menu/store1_crave_corner_pune_burger_2.jpg',
+            description: 'Thick grilled cottage cheese patty topped with cheddar slice and tangy dressing.',
+          },
+        ],
+      },
+      {
+        name: 'French Fries',
+        items: [
+          {
+            name: 'Classic Salted Fries',
+            price: 89,
+            image: '/images/menu/store1_crave_corner_pune_french_fries_1.jpg',
+            description: 'Crispy golden potato batons lightly sprinkled with rock salt.',
+          },
+          {
+            name: 'Peri-Peri Fries',
+            price: 109,
+            image: '/images/menu/store1_crave_corner_pune_french_fries_2.jpg',
+            description: 'Crunchy fries tossed in fiery and tangy peri-peri herb blend.',
+          },
+        ],
+      },
+      {
+        name: 'Macaroni',
+        items: [
+          {
+            name: 'Masala Macaroni',
+            price: 119,
+            image: '/images/menu/store1_crave_corner_pune_macaroni_1.jpg',
+            description: 'Elbow pasta tossed in a robust Indian spiced tomato-onion tadka.',
+          },
+          {
+            name: 'Cheesy Macaroni',
+            price: 149,
+            image: '/images/menu/store1_crave_corner_pune_macaroni_2.jpg',
+            description: 'Tender macaroni smothered in a rich, decadent three-cheese sauce.',
+          },
+        ],
+      },
+      {
+        name: 'Hot-Coffee',
+        items: [
+          {
+            name: 'Classic Cappuccino',
+            price: 99,
+            image: '/images/menu/store1_crave_corner_pune_hot_coffee_1.jpg',
+            description: 'Bold espresso shot topped with a thick layer of silky velvety milk foam.',
+          },
+          {
+            name: 'Chocolate Coffee',
+            price: 119,
+            image: '/images/menu/store1_crave_corner_pune_hot_coffee_2.jpg',
+            description: 'Freshly brewed espresso infused with dark chocolate and steamed milk.',
+          },
+        ],
+      },
+      {
+        name: 'Ice-Tea',
+        items: [
+          {
+            name: 'Lemon Iced Tea',
+            price: 89,
+            image: '/images/menu/store1_crave_corner_pune_ice_tea_1.jpg',
+            description: 'Refreshing brewed iced tea infused with tangy lemon and fresh mint sprigs.',
+          },
+          {
+            name: 'Peach Iced Tea',
+            price: 109,
+            image: '/images/menu/store1_crave_corner_pune_ice_tea_2.jpg',
+            description: 'Chilled iced black tea blended with sweet and juicy summer peach notes.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'Urban Bite Kitchen',
+    location: 'College Road, Nashik, Maharashtra',
+    adminEmail: 'uptown_admin@storepulse.com',
+    categories: [
+      {
+        name: 'Veg. Mania',
+        items: [
+          {
+            name: 'Spicy Veg Mania',
+            price: 139,
+            image: '/images/menu/store2_urban_bite_nashik_veg_mania_1.jpg',
+            description: 'Zesty garden vegetables tossed in fiery house spices and baked golden.',
+          },
+          {
+            name: 'Tandoori Paneer Mania',
+            price: 179,
+            image: '/images/menu/store2_urban_bite_nashik_veg_mania_2.jpg',
+            description: 'Tandoori marinated cottage cheese with bell peppers and roasted spices.',
+          },
+        ],
+      },
+      {
+        name: 'Sandwich',
+        items: [
+          {
+            name: 'Bombay Masala Sandwich',
+            price: 109,
+            image: '/images/menu/store2_urban_bite_nashik_sandwich_1.jpg',
+            description: 'Street-style spiced potato mash, beetroot, and green chutney toasted crisp.',
+          },
+          {
+            name: 'Corn Cheese Grill',
+            price: 139,
+            image: '/images/menu/store2_urban_bite_nashik_sandwich_2.jpg',
+            description: 'Triple-layered toasted sandwich loaded with sweet corn and molten cheese.',
+          },
+        ],
+      },
+      {
+        name: 'Veg. Pizza',
+        items: [
+          {
+            name: 'Tandoori Paneer Pizza',
+            price: 239,
+            image: '/images/menu/store2_urban_bite_nashik_veg_pizza_1.jpg',
+            description: 'Marinated tandoori paneer, red onions, and crisp capsicum on thin crust.',
+          },
+          {
+            name: 'Spicy Garden Pizza',
+            price: 209,
+            image: '/images/menu/store2_urban_bite_nashik_veg_pizza_2.jpg',
+            description: 'Topped with spicy jalapenos, bell peppers, corn, and house marinara.',
+          },
+        ],
+      },
+      {
+        name: 'Burger',
+        items: [
+          {
+            name: 'Aloo Crunch Burger',
+            price: 109,
+            image: '/images/menu/store2_urban_bite_nashik_burger_1.jpg',
+            description: 'Crispy herb potato patty layered with sliced onions, tomatoes, and spicy mayo.',
+          },
+          {
+            name: 'Mexican Veg Burger',
+            price: 149,
+            image: '/images/menu/store2_urban_bite_nashik_burger_2.jpg',
+            description: 'Spicy bean and corn patty loaded with tangy salsa, jalapenos, and cheddar.',
+          },
+        ],
+      },
+      {
+        name: 'French Fries',
+        items: [
+          {
+            name: 'Masala Fries',
+            price: 99,
+            image: '/images/menu/store2_urban_bite_nashik_french_fries_1.jpg',
+            description: 'Crisp potato fries dusted with Nashik special chaat masala blend.',
+          },
+          {
+            name: 'Cheese Fries',
+            price: 129,
+            image: '/images/menu/store2_urban_bite_nashik_french_fries_2.jpg',
+            description: 'Hot golden fries drenched in rich, molten cheddar cheese sauce.',
+          },
+        ],
+      },
+      {
+        name: 'Macaroni',
+        items: [
+          {
+            name: 'Schezwan Macaroni',
+            price: 129,
+            image: '/images/menu/store2_urban_bite_nashik_macaroni_1.jpg',
+            description: 'Wok-tossed macaroni pasta in a piquant, fiery Schezwan garlic sauce.',
+          },
+          {
+            name: 'Creamy Herb Macaroni',
+            price: 149,
+            image: '/images/menu/store2_urban_bite_nashik_macaroni_2.jpg',
+            description: 'Al dente macaroni simmered in garlic herb butter and fresh cream.',
+          },
+        ],
+      },
+      {
+        name: 'Hot-Coffee',
+        items: [
+          {
+            name: 'Filter Coffee',
+            price: 79,
+            image: '/images/menu/store2_urban_bite_nashik_hot_coffee_1.jpg',
+            description: 'Authentic South Indian chicory-blend coffee decoction with frothed hot milk.',
+          },
+          {
+            name: 'Mocha Coffee',
+            price: 119,
+            image: '/images/menu/store2_urban_bite_nashik_hot_coffee_2.jpg',
+            description: 'A harmonious blend of bold espresso, Belgian cocoa, and velvety milk.',
+          },
+        ],
+      },
+      {
+        name: 'Ice-Tea',
+        items: [
+          {
+            name: 'Mint Lemon Iced Tea',
+            price: 99,
+            image: '/images/menu/store2_urban_bite_nashik_ice_tea_1.jpg',
+            description: 'Crisp cold tea elevated with fresh bruised mint sprigs and lemon juice.',
+          },
+          {
+            name: 'Green Apple Iced Tea',
+            price: 109,
+            image: '/images/menu/store2_urban_bite_nashik_ice_tea_2.jpg',
+            description: 'Vibrant tart green apple syrup shaken with iced black tea.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'Sai Snacks & Café',
+    location: 'Pimpalwadi Road, Shirdi, Maharashtra',
+    adminEmail: 'suburban_admin@storepulse.com',
+    categories: [
+      {
+        name: 'Veg. Mania',
+        items: [
+          {
+            name: 'Sai Special Veg Mania',
+            price: 129,
+            image: '/images/menu/store3_sai_snacks_shirdi_veg_mania_1.jpg',
+            description: 'Traditional vegetable medley seasoned with mild aromatic herbs.',
+          },
+          {
+            name: 'Paneer Cheese Mania',
+            price: 169,
+            image: '/images/menu/store3_sai_snacks_shirdi_veg_mania_2.jpg',
+            description: 'Soft malai paneer cubes and mozzarella cheese baked to golden perfection.',
+          },
+        ],
+      },
+      {
+        name: 'Sandwich',
+        items: [
+          {
+            name: 'Garden Fresh Sandwich',
+            price: 89,
+            image: '/images/menu/store3_sai_snacks_shirdi_sandwich_1.jpg',
+            description: 'Crisp lettuce, fresh sliced tomatoes, and crunchy bell peppers on buttered bread.',
+          },
+          {
+            name: 'Grilled Cheese Sandwich',
+            price: 119,
+            image: '/images/menu/store3_sai_snacks_shirdi_sandwich_2.jpg',
+            description: 'Classic golden toasted sourdough filled with melted mature cheddar cheese.',
+          },
+        ],
+      },
+      {
+        name: 'Veg. Pizza',
+        items: [
+          {
+            name: 'Temple Town Veg Pizza',
+            price: 199,
+            image: '/images/menu/store3_sai_snacks_shirdi_veg_pizza_1.jpg',
+            description: 'Wholesome thin-crust pizza topped with freshly harvested seasonal vegetables.',
+          },
+          {
+            name: 'Classic Cheese Pizza',
+            price: 169,
+            image: '/images/menu/store3_sai_snacks_shirdi_veg_pizza_2.jpg',
+            description: 'Generous layer of 100% real mozzarella cheese on a zesty herb tomato base.',
+          },
+        ],
+      },
+      {
+        name: 'Burger',
+        items: [
+          {
+            name: 'Aloo Tikki Burger',
+            price: 99,
+            image: '/images/menu/store3_sai_snacks_shirdi_burger_1.jpg',
+            description: 'Golden fried spiced potato tikki tucked inside a soft toasted sesame bun.',
+          },
+          {
+            name: 'Paneer Delight Burger',
+            price: 149,
+            image: '/images/menu/store3_sai_snacks_shirdi_burger_2.jpg',
+            description: 'Succulent paneer patty seasoned with aromatic herbs and fresh crunchy lettuce.',
+          },
+        ],
+      },
+      {
+        name: 'French Fries',
+        items: [
+          {
+            name: 'Salted Fries',
+            price: 79,
+            image: '/images/menu/store3_sai_snacks_shirdi_french_fries_1.jpg',
+            description: 'Light, crisp, and perfectly salted fresh potato fries.',
+          },
+          {
+            name: 'Chaat Masala Fries',
+            price: 99,
+            image: '/images/menu/store3_sai_snacks_shirdi_french_fries_2.jpg',
+            description: 'Crunchy fries tossed in tangy Indian chaat spices and lemon zest.',
+          },
+        ],
+      },
+      {
+        name: 'Macaroni',
+        items: [
+          {
+            name: 'Desi Masala Macaroni',
+            price: 109,
+            image: '/images/menu/store3_sai_snacks_shirdi_macaroni_1.jpg',
+            description: 'Comforting homestyle macaroni cooked with ginger, garlic, and fresh coriander.',
+          },
+          {
+            name: 'Cheese Corn Macaroni',
+            price: 139,
+            image: '/images/menu/store3_sai_snacks_shirdi_macaroni_2.jpg',
+            description: 'Tender elbow pasta with sweet corn kernels bathed in rich cream cheese.',
+          },
+        ],
+      },
+      {
+        name: 'Hot-Coffee',
+        items: [
+          {
+            name: 'Classic Hot Coffee',
+            price: 69,
+            image: '/images/menu/store3_sai_snacks_shirdi_hot_coffee_1.jpg',
+            description: 'Steaming aromatic cup of smooth roasted coffee brewed fresh to order.',
+          },
+          {
+            name: 'Strong Filter Coffee',
+            price: 79,
+            image: '/images/menu/store3_sai_snacks_shirdi_hot_coffee_2.jpg',
+            description: 'Extra bold dark roast South Indian filter coffee with a frothy head.',
+          },
+        ],
+      },
+      {
+        name: 'Ice-Tea',
+        items: [
+          {
+            name: 'Lemon Ice Tea',
+            price: 79,
+            image: '/images/menu/store3_sai_snacks_shirdi_ice_tea_1.jpg',
+            description: 'Classic chilled iced tea infused with sunny lemon slices and crushed ice.',
+          },
+          {
+            name: 'Peach Ice Tea',
+            price: 99,
+            image: '/images/menu/store3_sai_snacks_shirdi_ice_tea_2.jpg',
+            description: 'Fragrant cold-brewed black tea kissed with luscious natural peach nectar.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'Nagar Food Hub',
+    location: 'Savedi, Ahilyanagar, Maharashtra',
+    adminEmail: 'metro_admin@storepulse.com',
+    categories: [
+      {
+        name: 'Veg. Mania',
+        items: [
+          {
+            name: 'Nagar Special Mania',
+            price: 139,
+            image: '/images/menu/store4_nagar_food_hub_veg_mania_1.jpg',
+            description: 'Chef special vegetable medley baked with authentic Ahilyanagar spices.',
+          },
+          {
+            name: 'Double Cheese Veg Mania',
+            price: 169,
+            image: '/images/menu/store4_nagar_food_hub_veg_mania_2.jpg',
+            description: 'Double portions of melted mozzarella and cheddar over crisp seasoned veggies.',
+          },
+        ],
+      },
+      {
+        name: 'Sandwich',
+        items: [
+          {
+            name: 'Veg Club Sandwich',
+            price: 159,
+            image: '/images/menu/store4_nagar_food_hub_sandwich_1.jpg',
+            description: 'Double-decker toasted sandwich with cheese, garden veggies, and herb dressing.',
+          },
+          {
+            name: 'Chilli Cheese Sandwich',
+            price: 119,
+            image: '/images/menu/store4_nagar_food_hub_sandwich_2.jpg',
+            description: 'Spicy green chillies and melted cheddar cheese on toasted artisan bread.',
+          },
+        ],
+      },
+      {
+        name: 'Veg. Pizza',
+        items: [
+          {
+            name: 'Double Cheese Pizza',
+            price: 229,
+            image: '/images/menu/store4_nagar_food_hub_veg_pizza_1.jpg',
+            description: 'Overflowing with molten mozzarella cheese blend over rich Italian marinara.',
+          },
+          {
+            name: 'Corn Capsicum Pizza',
+            price: 199,
+            image: '/images/menu/store4_nagar_food_hub_veg_pizza_2.jpg',
+            description: 'Sweet golden corn paired with crunchy green capsicum and melted cheese.',
+          },
+        ],
+      },
+      {
+        name: 'Burger',
+        items: [
+          {
+            name: 'Double Patty Veg Burger',
+            price: 169,
+            image: '/images/menu/store4_nagar_food_hub_burger_1.jpg',
+            description: 'Two hearty vegetable patties stacked with cheese slice, onion, and tomato.',
+          },
+          {
+            name: 'Crispy Cheese Burger',
+            price: 139,
+            image: '/images/menu/store4_nagar_food_hub_burger_2.jpg',
+            description: 'Crispy seasoned patty crowned with an oozing crumbed cheese center.',
+          },
+        ],
+      },
+      {
+        name: 'French Fries',
+        items: [
+          {
+            name: 'Classic Fries',
+            price: 89,
+            image: '/images/menu/store4_nagar_food_hub_french_fries_1.jpg',
+            description: 'Traditional straight-cut golden fries, crisp on the outside and fluffy inside.',
+          },
+          {
+            name: 'Peri-Peri Cheese Fries',
+            price: 139,
+            image: '/images/menu/store4_nagar_food_hub_french_fries_2.jpg',
+            description: 'Spicy peri-peri fries drenched in hot liquid cheddar cheese sauce.',
+          },
+        ],
+      },
+      {
+        name: 'Macaroni',
+        items: [
+          {
+            name: 'Spicy Tomato Macaroni',
+            price: 119,
+            image: '/images/menu/store4_nagar_food_hub_macaroni_1.jpg',
+            description: 'Zesty sun-dried tomato sauce infused with chilli flakes, garlic, and fresh herbs.',
+          },
+          {
+            name: 'Creamy Cheese Macaroni',
+            price: 149,
+            image: '/images/menu/store4_nagar_food_hub_macaroni_2.jpg',
+            description: 'Velvety smooth white cheese sauce tossed with tender baked macaroni pasta.',
+          },
+        ],
+      },
+      {
+        name: 'Hot-Coffee',
+        items: [
+          {
+            name: 'Classic Cappuccino',
+            price: 99,
+            image: '/images/menu/store4_nagar_food_hub_hot_coffee_1.jpg',
+            description: 'Equal parts bold espresso, steamed milk, and airy foam dusted with cinnamon.',
+          },
+          {
+            name: 'Vanilla Coffee',
+            price: 109,
+            image: '/images/menu/store4_nagar_food_hub_hot_coffee_2.jpg',
+            description: 'Steaming hot coffee infused with aromatic Madagascar vanilla extract.',
+          },
+        ],
+      },
+      {
+        name: 'Ice-Tea',
+        items: [
+          {
+            name: 'Lemon Mint Ice Tea',
+            price: 89,
+            image: '/images/menu/store4_nagar_food_hub_ice_tea_1.jpg',
+            description: 'Invigorating blend of freshly squeezed lemon juice, garden mint, and iced tea.',
+          },
+          {
+            name: 'Peach Ice Tea',
+            price: 109,
+            image: '/images/menu/store4_nagar_food_hub_ice_tea_2.jpg',
+            description: 'Subtly sweet and refreshing peach infused cold brewed black tea.',
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export async function seed() {
+  logger.info('Starting idempotent database seed for 4 Stores with 64 High-Res Menu Items...');
+
+  // 1. Ensure required admin users exist without deleting or altering any existing accounts
   const passwordHash = await bcrypt.hash('admin123', 10);
-  const userPasswordHash = await bcrypt.hash('user123', 10);
-
-  const superAdmin = await prisma.user.create({
-    data: {
-      name: 'StorePulse SuperAdmin',
-      email: 'admin@storepulse.com',
-      password_hash: passwordHash,
-      role: 'SUPERADMIN',
-    },
-  });
-
-  const admin1 = await prisma.user.create({
-    data: {
-      name: 'Central Bistro Manager',
-      email: 'central_admin@storepulse.com',
-      password_hash: passwordHash,
-      role: 'ADMIN',
-    },
-  });
-
-  const admin2 = await prisma.user.create({
-    data: {
-      name: 'Uptown Grill Manager',
-      email: 'uptown_admin@storepulse.com',
-      password_hash: passwordHash,
-      role: 'ADMIN',
-    },
-  });
-
-  const admin3 = await prisma.user.create({
-    data: {
-      name: 'Suburban House Manager',
-      email: 'suburban_admin@storepulse.com',
-      password_hash: passwordHash,
-      role: 'ADMIN',
-    },
-  });
-
-  const admin4 = await prisma.user.create({
-    data: {
-      name: 'Metro Express Manager',
-      email: 'metro_admin@storepulse.com',
-      password_hash: passwordHash,
-      role: 'ADMIN',
-    },
-  });
-
-  const regularUser = await prisma.user.create({
-    data: {
-      name: 'Alex Morgan',
-      email: 'user@storepulse.com',
-      password_hash: userPasswordHash,
-      role: 'USER',
-    },
-  });
-
-  const regularUser2 = await prisma.user.create({
-    data: {
-      name: 'Sarah Jenkins',
-      email: 'sarah.jenkins@example.com',
-      password_hash: userPasswordHash,
-      role: 'USER',
-    },
-  });
-
-  logger.info(`Seeded SuperAdmin (${superAdmin.email}), Store Admins, and Customers successfully`);
-
-  // 3. Define 4 Distinct Western Stores with 1-2 items per category matching photos 100%
-  const storesData = [
-    {
-      name: 'Central Cafe & Bistro',
-      location: '101 Downtown Boulevard, Central District',
-      adminId: admin1.id,
-      categories: [
-        {
-          name: 'Main Menu',
-          items: [
-            {
-              name: 'Classic Margherita Veg. Pizza',
-              description: 'Stone-baked thin crust pizza topped with fresh mozzarella cheese, sun-ripened tomatoes, and aromatic sweet basil.',
-              price: 279.00,
-              rating: 4.9,
-              image_url: '/images/food/pizza.jpg',
-            },
-            {
-              name: 'Grilled Italian Club Sandwich',
-              description: 'Triple-decker artisan toasted sandwich layered with crisp garden vegetables, melted cheddar, and herb aioli.',
-              price: 189.00,
-              rating: 4.8,
-              image_url: '/images/food/sandwich.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Appetizer',
-          items: [
-            {
-              name: 'Crispy Cheddar Bacon Burger',
-              description: 'Juicy prime patty with melted aged cheddar, crisp lettuce, tomato slices, and secret sauce on a toasted brioche bun.',
-              price: 219.00,
-              rating: 4.8,
-              image_url: '/images/food/burger.jpg',
-            },
-            {
-              name: 'Golden Salted French Fries',
-              description: 'Crispy skin-on golden potato fries seasoned with fine Himalayan sea salt, served with garlic mayo dip.',
-              price: 109.00,
-              rating: 4.7,
-              image_url: '/images/food/fries.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Beverages',
-          items: [
-            {
-              name: 'Artisanal Hot Cappuccino',
-              description: 'Freshly roasted espresso shot topped with velvety steamed milk foam and delicate barista latte art.',
-              price: 149.00,
-              rating: 4.9,
-              image_url: '/images/food/coffee.jpg',
-            },
-            {
-              name: 'Iced Peach Lemon Tea',
-              description: 'Refreshing chilled organic black tea infused with sweet peach syrup and fresh lemon slices.',
-              price: 129.00,
-              rating: 4.6,
-              image_url: '/images/food/coffee.jpg',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Uptown Pizzeria & Grill',
-      location: '404 High Street, Uptown District',
-      adminId: admin2.id,
-      categories: [
-        {
-          name: 'Main Menu',
-          items: [
-            {
-              name: 'Pepperoni & Mozzarella Pizza',
-              description: 'Traditional wood-fired crust loaded with spicy cured beef pepperoni, rich tomato marinara, and double mozzarella.',
-              price: 349.00,
-              rating: 4.9,
-              image_url: '/images/food/pizza.jpg',
-            },
-            {
-              name: 'Toasted Submarine Sandwich',
-              description: 'Crisp submarine hoagie filled with seasoned garden veggies, melted provolone cheese, and house vinaigrette.',
-              price: 199.00,
-              rating: 4.7,
-              image_url: '/images/food/sub_sandwich.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Appetizer',
-          items: [
-            {
-              name: 'Smoky BBQ Double Burger',
-              description: 'Two flame-grilled patties basted in sweet hickory BBQ sauce, topped with crispy onion rings and melted cheese.',
-              price: 249.00,
-              rating: 4.9,
-              image_url: '/images/food/burger.jpg',
-            },
-            {
-              name: 'Crispy Peri Peri French Fries',
-              description: 'Hot crunchy french fries tossed in zesty peri-peri chili paprika seasoning with creamy cheese dip.',
-              price: 129.00,
-              rating: 4.8,
-              image_url: '/images/food/fries.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Beverages',
-          items: [
-            {
-              name: 'Vanilla Latte Hot-Coffee',
-              description: 'Smooth espresso blended with steamed milk and Madagascar vanilla syrup, lightly dusted with cinnamon.',
-              price: 169.00,
-              rating: 4.8,
-              image_url: '/images/food/coffee.jpg',
-            },
-            {
-              name: 'Cold Brew Ice-Tea',
-              description: 'Slow-steeped cold brew black tea served over crystal ice with fresh mint sprigs and citrus twist.',
-              price: 139.00,
-              rating: 4.7,
-              image_url: '/images/food/coffee.jpg',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Suburban Gourmet House',
-      location: '707 Oak Avenue, West End Suburbs',
-      adminId: admin3.id,
-      categories: [
-        {
-          name: 'Main Menu',
-          items: [
-            {
-              name: 'Truffle Mushroom Veg. Pizza',
-              description: 'Gourmet white sauce pizza topped with sautéed cremini mushrooms, truffle oil drizzle, and fresh oregano.',
-              price: 369.00,
-              rating: 4.9,
-              image_url: '/images/food/pizza.jpg',
-            },
-            {
-              name: 'Avocado Club Veg. Sandwich',
-              description: 'Fresh sliced Haas avocado, ripe tomatoes, crisp cucumber, and cheddar cheese on whole grain toasted sourdough.',
-              price: 219.00,
-              rating: 4.8,
-              image_url: '/images/food/sandwich.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Appetizer',
-          items: [
-            {
-              name: 'Melted Swiss Mushroom Burger',
-              description: 'Savory grilled patty smothered with buttered mushrooms and melted Swiss cheese on toasted sesame seed bun.',
-              price: 239.00,
-              rating: 4.7,
-              image_url: '/images/food/burger.jpg',
-            },
-            {
-              name: 'Seasoned Curly French Fries',
-              description: 'Golden spiral-cut curly fries seasoned with garlic salt, onion powder, and paprika.',
-              price: 139.00,
-              rating: 4.8,
-              image_url: '/images/food/fries.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Beverages',
-          items: [
-            {
-              name: 'Caramel Macchiato Hot-Coffee',
-              description: 'Freshly steamed milk with vanilla-flavored syrup marked with espresso and topped with caramel drizzle.',
-              price: 179.00,
-              rating: 4.9,
-              image_url: '/images/food/coffee.jpg',
-            },
-            {
-              name: 'Classic Iced Lemon Tea',
-              description: 'Crisp brewed Ceylon black tea shaken with ice, pure cane sugar, and freshly squeezed lemon juice.',
-              price: 119.00,
-              rating: 4.7,
-              image_url: '/images/food/coffee.jpg',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Metro Deli & Express',
-      location: '50 Grand Central Avenue, Financial District',
-      adminId: admin4.id,
-      categories: [
-        {
-          name: 'Main Menu',
-          items: [
-            {
-              name: 'Four Cheese Crisp Pizza',
-              description: 'Crisp rustic thin crust layered with rich mozzarella, sharp parmesan, provolone, and creamy ricotta.',
-              price: 329.00,
-              rating: 4.8,
-              image_url: '/images/food/pizza.jpg',
-            },
-            {
-              name: 'Classic Deli Submarine Sandwich',
-              description: 'Authentic 9-inch toasted submarine roll filled with sliced cheddar, roasted peppers, and basil pesto spread.',
-              price: 209.00,
-              rating: 4.7,
-              image_url: '/images/food/sub_sandwich.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Appetizer',
-          items: [
-            {
-              name: 'Veg. Mania Crunch Burger',
-              description: 'Crispy seasoned vegetable patty with fresh lettuce, sliced tomatoes, pickle chips, and special burger relish.',
-              price: 199.00,
-              rating: 4.8,
-              image_url: '/images/food/burger.jpg',
-            },
-            {
-              name: 'Loaded Cheesy French Fries',
-              description: 'Basket of hot crispy french fries smothered with melted warm cheddar cheese sauce and chopped green scallions.',
-              price: 149.00,
-              rating: 4.9,
-              image_url: '/images/food/fries.jpg',
-            },
-          ],
-        },
-        {
-          name: 'Beverages',
-          items: [
-            {
-              name: 'Dark Roasted Espresso Coffee',
-              description: 'Double shot of dark Italian roast espresso with rich crema and bold, aromatic notes of dark chocolate.',
-              price: 119.00,
-              rating: 4.8,
-              image_url: '/images/food/coffee.jpg',
-            },
-            {
-              name: 'Berry Hibiscus Ice-Tea',
-              description: 'Tart and refreshing botanical iced tea infused with dried hibiscus petals and sweet summer berries.',
-              price: 139.00,
-              rating: 4.8,
-              image_url: '/images/food/coffee.jpg',
-            },
-          ],
-        },
-      ],
-    },
+  const defaultAdmins = [
+    { email: 'admin@storepulse.com', name: 'StorePulse SuperAdmin', role: 'SUPERADMIN' as const },
+    { email: 'central_admin@storepulse.com', name: 'Central Bistro Manager', role: 'ADMIN' as const },
+    { email: 'uptown_admin@storepulse.com', name: 'Uptown Grill Manager', role: 'ADMIN' as const },
+    { email: 'suburban_admin@storepulse.com', name: 'Suburban House Manager', role: 'ADMIN' as const },
+    { email: 'metro_admin@storepulse.com', name: 'Metro Express Manager', role: 'ADMIN' as const },
   ];
 
-  // 4. Create Stores, Categories, and Items in Database
-  interface CreatedStoreEntry {
-    store: { id: string; name: string };
-    items: Array<{ id: string; name: string; price: number }>;
+  for (const adm of defaultAdmins) {
+    const existing = await prisma.user.findUnique({ where: { email: adm.email } });
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          email: adm.email,
+          name: adm.name,
+          role: adm.role,
+          password_hash: passwordHash,
+        },
+      });
+      logger.info(`Created default admin account: ${adm.email}`);
+    }
   }
 
-  const createdStores: CreatedStoreEntry[] = [];
+  // 2. Iterate through each store, creating or updating safely
+  let totalStoresCount = 0;
+  let totalCategoriesCount = 0;
+  let totalItemsCount = 0;
 
-  for (const sData of storesData) {
-    const store = await prisma.store.create({
-      data: {
-        name: sData.name,
-        location: sData.location,
-        admin_id: sData.adminId,
-      },
+  for (const storeData of STORES_DATA) {
+    // Find designated admin user
+    let admin = await prisma.user.findUnique({ where: { email: storeData.adminEmail } });
+    if (!admin) {
+      admin = await prisma.user.findFirst({ where: { role: { in: ['SUPERADMIN', 'ADMIN'] } } });
+    }
+    if (!admin) {
+      throw new Error(`Cannot seed store ${storeData.name}: No admin user found.`);
+    }
+
+    // Check if store already exists by exact name
+    let store = await prisma.store.findFirst({
+      where: { name: storeData.name },
     });
 
-    const storeItemsList: Array<{ id: string; name: string; price: number }> = [];
-
-    for (const catData of sData.categories) {
-      const cat = await prisma.category.create({
+    if (!store) {
+      store = await prisma.store.create({
         data: {
+          name: storeData.name,
+          location: storeData.location,
+          admin_id: admin.id,
+          is_active: true,
+        },
+      });
+      logger.info(`Created store: ${store.name} (${store.id})`);
+    } else {
+      // Update location and admin if changed
+      store = await prisma.store.update({
+        where: { id: store.id },
+        data: {
+          location: storeData.location,
+          admin_id: admin.id,
+          is_active: true,
+        },
+      });
+      logger.info(`Reusing existing store: ${store.name} (${store.id})`);
+    }
+    totalStoresCount++;
+
+    // 3. Categories and items for this store
+    for (const catData of storeData.categories) {
+      let category = await prisma.category.findFirst({
+        where: {
           name: catData.name,
           store_id: store.id,
         },
       });
 
-      for (const itemData of catData.items) {
-        const item = await prisma.item.create({
+      if (!category) {
+        category = await prisma.category.create({
           data: {
-            name: itemData.name,
-            description: itemData.description,
-            price: itemData.price,
-            rating: itemData.rating,
-            image_url: itemData.image_url,
-            category_id: cat.id,
+            name: catData.name,
             store_id: store.id,
           },
         });
-        storeItemsList.push({ id: item.id, name: item.name, price: item.price });
       }
-    }
+      totalCategoriesCount++;
 
-    createdStores.push({ store, items: storeItemsList });
-  }
-
-  logger.info(`Seeded 4 Western Stores with 24 items matching pictures 100%`);
-
-  // 5. Seed Orders (Chronologically across past 7 days for live analytics charts)
-  const now = new Date();
-  const paymentMethods: Array<'CASH' | 'CARD' | 'UPI'> = ['CARD', 'CARD', 'UPI', 'CASH'];
-  let totalOrderCount = 0;
-
-  for (const storeRecord of createdStores) {
-    const storeItems = storeRecord.items;
-    if (storeItems.length === 0) continue;
-
-    // Distribute orders across 7 days (day 6 down to day 0 = today)
-    for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
-      const orderDay = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-      const ordersForDay = dayOffset === 0 ? 3 : 2 + (dayOffset % 2);
-
-      for (let i = 0; i < ordersForDay; i++) {
-        const itemA = storeItems[i % storeItems.length]!;
-        const itemB = storeItems[(i + 1) % storeItems.length]!;
-
-        const qtyA = 1 + (i % 2);
-        const qtyB = 1;
-        const subA = Math.round(qtyA * itemA.price * 100) / 100;
-        const subB = Math.round(qtyB * itemB.price * 100) / 100;
-
-        const orderItems = [
-          {
-            item_id: itemA.id,
-            name: itemA.name,
-            qty: qtyA,
-            quantity: qtyA,
-            price: itemA.price,
-            unit_price: itemA.price,
-            subtotal: subA,
-          },
-          {
-            item_id: itemB.id,
-            name: itemB.name,
-            qty: qtyB,
-            quantity: qtyB,
-            price: itemB.price,
-            unit_price: itemB.price,
-            subtotal: subB,
-          },
-        ];
-
-        const totalAmount = Math.round((subA + subB) * 100) / 100;
-        const paymentMethod = paymentMethods[(i + dayOffset) % paymentMethods.length]!;
-
-        // Realistic order status distribution
-        let status: 'PLACED' | 'PENDING' | 'PREPARED' = 'PREPARED';
-        if (dayOffset === 0) {
-          // Today's orders have active statuses for immediate live testing!
-          status = i === 0 ? 'PLACED' : i === 1 ? 'PENDING' : 'PREPARED';
-        }
-
-        const paymentStatus = paymentMethod === 'CASH' && status === 'PENDING' ? 'PENDING' : 'COMPLETED';
-        const createdAt = new Date(orderDay.getTime() + (i * 3 + 10) * 3600000);
-
-        await prisma.order.create({
-          data: {
-            store_id: storeRecord.store.id,
-            user_id: i % 2 === 0 ? regularUser.id : regularUser2.id,
-            items: orderItems,
-            total_amount: totalAmount,
-            status,
-            payment_method: paymentMethod,
-            payment_status: paymentStatus,
-            created_at: createdAt,
+      for (const itemData of catData.items) {
+        let item = await prisma.item.findFirst({
+          where: {
+            name: itemData.name,
+            store_id: store.id,
           },
         });
-        totalOrderCount++;
+
+        if (!item) {
+          await prisma.item.create({
+            data: {
+              name: itemData.name,
+              description: itemData.description,
+              price: itemData.price,
+              image_url: itemData.image,
+              category_id: category.id,
+              store_id: store.id,
+              is_active: true,
+              rating: 4.8,
+            },
+          });
+        } else {
+          await prisma.item.update({
+            where: { id: item.id },
+            data: {
+              description: itemData.description,
+              price: itemData.price,
+              image_url: itemData.image,
+              category_id: category.id,
+              is_active: true,
+            },
+          });
+        }
+        totalItemsCount++;
       }
     }
   }
 
-  // 6. Invalidate all Redis caches for instant real-time sync
-  await Promise.all([
-    RedisService.invalidatePattern('menu:*'),
-    RedisService.invalidatePattern('orders:*'),
-    RedisService.invalidatePattern('analytics:*'),
-  ]);
+  logger.info(`\nSeeded successfully:`);
+  logger.info(`- ${totalStoresCount} Stores`);
+  logger.info(`- ${totalCategoriesCount} Categories`);
+  logger.info(`- ${totalItemsCount} Menu Items`);
 
-  logger.info(`Successfully seeded ${totalOrderCount} orders across all 4 Western stores`);
-  logger.info('Database seed complete and Redis caches refreshed!');
+  // 4. Invalidate Redis menu & store cache
+  try {
+    if (redis.status !== 'ready') {
+      await redis.connect();
+    }
+    await redis.flushdb();
+    logger.info('Cleaned store & menu Redis cache keys successfully');
+  } catch (err: any) {
+    logger.warn(`Redis cache clear note: ${err.message}`);
+  } finally {
+    try {
+      await redis.quit();
+    } catch {}
+  }
 }
 
-seed()
-  .catch((e) => {
-    logger.error('Seed error:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  seed()
+    .then(async () => {
+      await prisma.$disconnect();
+      process.exit(0);
+    })
+    .catch(async (e) => {
+      logger.error('Seed error:', e);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}

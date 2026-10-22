@@ -46,6 +46,7 @@ const MOBILE_CATEGORIES = [
   { label: 'Veg. Pizza', icon: <LocalPizzaIcon sx={{ fontSize: 16 }} /> },
   { label: 'Burger', icon: <LunchDiningIcon sx={{ fontSize: 16 }} /> },
   { label: 'French Fries', icon: <FastfoodIcon sx={{ fontSize: 16 }} /> },
+  { label: 'Macaroni', icon: <SoupKitchenIcon sx={{ fontSize: 16 }} /> },
   { label: 'Hot-Coffee', icon: <CoffeeIcon sx={{ fontSize: 16 }} /> },
   { label: 'Ice-Tea', icon: <LocalCafeIcon sx={{ fontSize: 16 }} /> },
 ];
@@ -107,12 +108,14 @@ export default function PosPage() {
       if (!matchesSearch) return false;
 
       // Category filter
-      if (selectedCategory === 'All' || selectedCategory === 'Veg. Mania' || selectedCategory === 'All Categories') {
+      if (selectedCategory === 'All' || selectedCategory === 'All Categories') {
         return true;
       }
 
-      if (selectedCategory === 'Main Menu' || selectedCategory === 'Appetizer' || selectedCategory === 'Beverages') {
-        return item.category?.name.toLowerCase() === selectedCategory.toLowerCase();
+      if (selectedCategory === 'Veg. Mania') {
+        const itemCatLower = (item.category?.name || '').toLowerCase();
+        const itemNameLower = item.name.toLowerCase();
+        return itemCatLower.includes('mania') || itemNameLower.includes('mania');
       }
 
       // Keyword match for subcategories (e.g. Sandwich, Pizza, Burger, Fries, Coffee, etc.)
