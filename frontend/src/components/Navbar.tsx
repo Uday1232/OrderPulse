@@ -39,12 +39,14 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { useOrderSocket } from '../context/SocketContext';
 import { useAuth } from '../hooks/useAuth';
 import { NotificationPopover } from './NotificationPopover';
+import { UserProfileDialog } from './profile/UserProfileDialog';
 
 export function Navbar() {
   const pathname = usePathname();
   const { isConnected } = useOrderSocket();
   const { user, isAdmin, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // If on login page, render clean minimal bar
   if (pathname === '/login') {
@@ -207,27 +209,29 @@ export function Navbar() {
               {/* User Session Profile / Login */}
               {user ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Chip
-                    icon={<AccountCircleIcon sx={{ fontSize: '1rem !important' }} />}
-                    label={
-                      <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
-                          {user.name} ({user.role})
-                        </Box>
-                        <Box component="span" sx={{ display: { xs: 'inline', md: 'none' } }}>
-                          {user.role}
-                        </Box>
-                      </Box>
-                    }
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                      color: '#E2E8F0',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      height: 28,
-                    }}
-                  />
+                  <Tooltip title="View Profile">
+                    <Chip
+                      icon={<AccountCircleIcon sx={{ fontSize: '1rem !important', color: '#FF7A00 !important' }} />}
+                      label={user.name?.trim() ? user.name : (user.role || 'User')}
+                      onClick={() => setProfileOpen(true)}
+                      size="small"
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        color: '#E2E8F0',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        height: 28,
+                        cursor: 'pointer',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 122, 0, 0.15)',
+                          borderColor: '#FF7A00',
+                          color: '#FFFFFF',
+                        },
+                      }}
+                    />
+                  </Tooltip>
                   <Tooltip title="Log Out">
                     <IconButton size="small" onClick={logout} sx={{ color: '#94A3B8', p: 0.8, '&:hover': { color: '#EF4444' } }}>
                       <LogoutIcon sx={{ fontSize: 17 }} />
@@ -305,9 +309,23 @@ export function Navbar() {
 
         {/* User Card inside Drawer */}
         {user ? (
-          <Box sx={{ p: 1.5, borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.04)', mb: 2 }}>
+          <Box
+            onClick={() => {
+              handleDrawerToggle();
+              setProfileOpen(true);
+            }}
+            sx={{
+              p: 1.5,
+              borderRadius: '12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              mb: 2,
+              cursor: 'pointer',
+              '&:hover': { backgroundColor: 'rgba(255, 122, 0, 0.12)', borderColor: '#FF7A00' },
+            }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#F8FAFC' }}>
-              {user.name}
+              {user.name?.trim() ? user.name : (user.role || 'User')}
             </Typography>
             <Typography variant="caption" sx={{ color: '#94A3B8', display: 'block', mb: 1 }}>
               {user.email}
@@ -446,6 +464,9 @@ export function Navbar() {
           </Box>
         )}
       </Drawer>
+
+      {/* User Profile Dialog */}
+      <UserProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   );
 }

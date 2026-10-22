@@ -14,6 +14,35 @@ export interface User {
   created_at?: string;
 }
 
+export interface UserProfile extends User {
+  ordersCount?: number;
+  storesCount?: number;
+  recentOrders?: Array<{
+    id: string;
+    total_amount: number;
+    status: OrderStatus;
+    created_at: string;
+    store: {
+      id: string;
+      name: string;
+      location: string;
+    };
+  }>;
+  managedStores?: Array<{
+    id: string;
+    name: string;
+    location: string;
+    is_active?: boolean;
+  }>;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -149,3 +178,11 @@ export const POPULAR_MENU_PRESETS = [
   { name: 'Crispy French Fries Golden', unit_price: 6.99 },
   { name: 'Artisan Hot-Coffee Latte', unit_price: 4.50 },
 ];
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+

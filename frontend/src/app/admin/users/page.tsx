@@ -24,6 +24,7 @@ import {
   Avatar,
   Tooltip,
   InputAdornment,
+  Pagination,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CloseIcon from '@mui/icons-material/Close';
@@ -36,11 +37,13 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import SearchIcon from '@mui/icons-material/Search';
 
 import { AdminSidebar } from '../../../components/admin/AdminSidebar';
 import { AdminGuard } from '../../../components/auth/AdminGuard';
 import { ApiService } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebounce } from '../../../hooks/useDebounce';
 import { Role } from '../../../types/order';
 
 interface UserRecord {
@@ -92,22 +95,49 @@ export default function UserManagementPage() {
     setAddModalOpen(true);
   };
 
-  const fetchUsers = async () => {
+  // Search & Role Filters & Pagination
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
+
+  const fetchUsers = React.useCallback(async () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const res = await ApiService.getUsers();
+      const res = await ApiService.getUsers({
+        search: debouncedSearch.trim() || undefined,
+        role: roleFilter !== 'ALL' ? roleFilter : undefined,
+        page,
+        limit: 10,
+      });
       setUsers(res.data || []);
+      if (res.pagination) {
+        setPagination(res.pagination);
+      } else {
+        setPagination({
+          total: res.data?.length || 0,
+          page,
+          limit: 10,
+          totalPages: Math.max(1, Math.ceil((res.data?.length || 0) / 10)),
+        });
+      }
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || 'Failed to load user accounts.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [debouncedSearch, roleFilter, page]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, roleFilter]);
 
   const handleToggleRole = async (targetUser: UserRecord) => {
     if (currentUser?.role !== 'SUPERADMIN') {
@@ -274,6 +304,8 @@ export default function UserManagementPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 2,
             }}
           >
             <Box>
@@ -289,8 +321,67 @@ export default function UserManagementPage() {
               </Typography>
             </Box>
             <Typography variant="caption" sx={{ color: '#1E40AF', fontWeight: 800 }}>
-              {users.length} Registered Accounts
+              {pagination.total} Registered Accounts
             </Typography>
+          </Paper>
+
+          {/* Search & Role Filters Bar */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 3,
+              borderRadius: '14px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
+          >
+            <TextField
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search users by name or email..."
+              size="small"
+              sx={{ minWidth: { xs: '100%', sm: 300 } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#94A3B8', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+                sx: { borderRadius: '10px', fontSize: '0.85rem' },
+              }}
+            />
+
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+              {[
+                { id: 'ALL', label: 'All Roles' },
+                { id: 'SUPERADMIN', label: 'SuperAdmin' },
+                { id: 'ADMIN', label: 'Store Admin' },
+                { id: 'USER', label: 'Customer' },
+              ].map((r) => (
+                <Chip
+                  key={r.id}
+                  label={r.label}
+                  onClick={() => setRoleFilter(r.id)}
+                  size="small"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    backgroundColor: roleFilter === r.id ? '#0F172A' : '#F1F5F9',
+                    color: roleFilter === r.id ? '#FFFFFF' : '#475569',
+                    '&:hover': {
+                      backgroundColor: roleFilter === r.id ? '#1E293B' : '#E2E8F0',
+                    },
+                  }}
+                />
+              ))}
+            </Box>
           </Paper>
 
           {/* Users Table */}
@@ -299,7 +390,8 @@ export default function UserManagementPage() {
               <CircularProgress sx={{ color: '#0F172A' }} />
             </Box>
           ) : (
-            <TableContainer
+            <>
+              <TableContainer
               component={Paper}
               sx={{
                 borderRadius: '16px',
@@ -444,6 +536,19 @@ export default function UserManagementPage() {
                 </TableBody>
               </Table>
             </TableContainer>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Pagination
+                  count={pagination.totalPages}
+                  page={page}
+                  onChange={(_, value) => setPage(value)}
+                  color="primary"
+                />
+              </Box>
+            )}
+          </>
           )}
 
           {/* Add Admin Modal with Auto-Generated Credentials */}

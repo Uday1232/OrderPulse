@@ -8,10 +8,33 @@ export class StoreService {
   private static readonly MENU_CACHE_TTL = 600; // 10 minutes
 
   /**
-   * Return all store locations (public)
+   * Return all store locations with optional search, active filtering, and pagination
    */
-  static async getAllStores() {
-    return prisma.store.findMany({
+  static async getAllStores(query?: { search?: string; q?: string; is_active?: string | boolean; page?: number | string; limit?: number | string }) {
+    const where: any = {};
+    const searchTerm = (query?.search || query?.q || '').trim();
+
+    if (searchTerm) {
+      where.OR = [
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { location: { contains: searchTerm, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query?.is_active !== undefined) {
+      where.is_active = String(query.is_active) === 'true';
+    }
+
+    const total = await prisma.store.count({ where });
+
+    const page = query?.page ? Math.max(Number(query.page), 1) : 1;
+    const limit = query?.limit ? Math.min(Math.max(Number(query.limit), 1), 100) : undefined;
+    const skip = limit ? (page - 1) * limit : undefined;
+
+    const stores = await prisma.store.findMany({
+      where,
+      skip,
+      take: limit,
       include: {
         admin: {
           select: {
@@ -30,6 +53,14 @@ export class StoreService {
       },
       orderBy: { created_at: 'desc' },
     });
+
+    return {
+      stores,
+      total,
+      page,
+      limit: limit || total,
+      totalPages: Math.max(Math.ceil(total / (limit || total || 1)), 1),
+    };
   }
 
   /**
@@ -258,18 +289,76 @@ export class StoreService {
   }
 
   /**
-   * Get flat list of items for a store (for table management)
+   * Get list of items for a store with searching, category/price filtering, and pagination
    */
-  static async getStoreItems(storeId: string) {
-    return prisma.item.findMany({
-      where: { store_id: storeId },
+  static async getStoreItems(
+    storeId: string,
+    query?: {
+      search?: string;
+      q?: string;
+      category_id?: string;
+      category?: string;
+      min_price?: number | string;
+      max_price?: number | string;
+      page?: number | string;
+      limit?: number | string;
+    }
+  ) {
+    const where: any = { store_id: storeId };
+    const searchTerm = (query?.search || query?.q || '').trim();
+
+    if (searchTerm) {
+      where.OR = [
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query?.category_id) {
+      where.category_id = query.category_id;
+    }
+
+    if (query?.category && query.category !== 'All') {
+      where.category = {
+        name: { equals: query.category.trim(), mode: 'insensitive' },
+      };
+    }
+
+    if (query?.min_price !== undefined || query?.max_price !== undefined) {
+      where.price = {};
+      if (query.min_price !== undefined && query.min_price !== '') {
+        where.price.gte = Number(query.min_price);
+      }
+      if (query.max_price !== undefined && query.max_price !== '') {
+        where.price.lte = Number(query.max_price);
+      }
+    }
+
+    const total = await prisma.item.count({ where });
+
+    const page = query?.page ? Math.max(Number(query.page), 1) : 1;
+    const limit = query?.limit ? Math.min(Math.max(Number(query.limit), 1), 100) : undefined;
+    const skip = limit ? (page - 1) * limit : undefined;
+
+    const items = await prisma.item.findMany({
+      where,
+      skip,
+      take: limit,
       include: {
         category: {
           select: { id: true, name: true },
         },
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { price: 'asc' },
     });
+
+    return {
+      items,
+      total,
+      page,
+      limit: limit || total,
+      totalPages: Math.max(Math.ceil(total / (limit || total || 1)), 1),
+    };
   }
 
   /**

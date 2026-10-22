@@ -102,10 +102,16 @@ export class OrderController {
   static async getMyOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.id;
-      const orders = await OrderService.getUserOrders(userId);
+      const result = await OrderService.getUserOrders(userId, req.query);
       res.status(200).json({
         success: true,
-        data: orders,
+        data: result.orders,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
       });
     } catch (error) {
       next(error);

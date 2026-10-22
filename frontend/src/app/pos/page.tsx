@@ -58,6 +58,8 @@ export default function PosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchInput, setSearchInput] = useState<string>('');
   const debouncedSearch = useDebounce(searchInput, 500);
+  const [priceRange, setPriceRange] = useState<string>('all');
+  const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const {
@@ -81,9 +83,21 @@ export default function PosPage() {
     }
   }, [allItems, inspectedItem, setInspectedItem]);
 
-  // Filter items by category and search
+  // Filter items by category, search, price range, and in-stock
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
+      // In-stock availability filter
+      if (inStockOnly && item.is_active === false) {
+        return false;
+      }
+
+      // Price range filter
+      const price = Number(item.price);
+      if (priceRange === 'under-150' && price >= 150) return false;
+      if (priceRange === '150-300' && (price < 150 || price > 300)) return false;
+      if (priceRange === '300-600' && (price < 300 || price > 600)) return false;
+      if (priceRange === 'above-600' && price <= 600) return false;
+
       // Search filter
       const matchesSearch =
         !debouncedSearch ||
@@ -93,7 +107,7 @@ export default function PosPage() {
       if (!matchesSearch) return false;
 
       // Category filter
-      if (selectedCategory === 'All' || selectedCategory === 'Veg. Mania') {
+      if (selectedCategory === 'All' || selectedCategory === 'Veg. Mania' || selectedCategory === 'All Categories') {
         return true;
       }
 
@@ -108,16 +122,16 @@ export default function PosPage() {
 
       return itemNameLower.includes(catLower) || itemCatLower.includes(catLower);
     });
-  }, [allItems, debouncedSearch, selectedCategory]);
+  }, [allItems, debouncedSearch, selectedCategory, priceRange, inStockOnly]);
 
   // Pagination for POS Dishes
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
 
-  // Reset page when category or search changes
+  // Reset page when category, search, or filters change
   React.useEffect(() => {
     setPage(1);
-  }, [selectedCategory, debouncedSearch]);
+  }, [selectedCategory, debouncedSearch, priceRange, inStockOnly, currentStoreId]);
 
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const paginatedItems = useMemo(() => {
@@ -135,10 +149,23 @@ export default function PosPage() {
         position: 'relative',
       }}
     >
-      {/* 1. Left Category Sidebar (Desktop only) */}
+      {/* 1. Left Category & Unified Filter Sidebar (Amazon/Flipkart style) */}
       <PosSidebar
         selectedCategory={selectedCategory}
         onSelectCategory={(cat) => setSelectedCategory(cat)}
+        selectedStoreId={currentStoreId}
+        onSelectStore={(id) => setCurrentStoreId(id)}
+        selectedPriceRange={priceRange}
+        onSelectPriceRange={setPriceRange}
+        inStockOnly={inStockOnly}
+        onToggleInStockOnly={setInStockOnly}
+        onResetFilters={() => {
+          setSelectedCategory('All');
+          setPriceRange('all');
+          setInStockOnly(false);
+          setSearchInput('');
+        }}
+        onOpenDeals={() => setDealAlertOpen(true)}
       />
 
       {/* 2. Center Menu Feed + Header */}

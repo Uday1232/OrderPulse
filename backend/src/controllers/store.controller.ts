@@ -3,12 +3,18 @@ import { StoreService } from '../services/store.service';
 import { CreateStoreInput, UpdateStoreInput, CreateCategoryInput, CreateItemInput } from '../validators/store.schema';
 
 export class StoreController {
-  static async getAllStores(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async getAllStores(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const stores = await StoreService.getAllStores();
+      const result = await StoreService.getAllStores(req.query);
       res.status(200).json({
         success: true,
-        data: stores,
+        data: result.stores,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
       });
     } catch (error) {
       next(error);
@@ -106,10 +112,16 @@ export class StoreController {
   static async getStoreItems(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { store_id } = req.params;
-      const items = await StoreService.getStoreItems(store_id!);
+      const result = await StoreService.getStoreItems(store_id!, req.query);
       res.status(200).json({
         success: true,
-        data: items,
+        data: result.items,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
       });
     } catch (error) {
       next(error);

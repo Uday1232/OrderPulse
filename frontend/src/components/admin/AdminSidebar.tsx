@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Box, Typography, Button, Stack, Avatar, IconButton, Tooltip, Chip } from '@mui/material';
@@ -17,6 +17,7 @@ import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 import { useAuth } from '../../hooks/useAuth';
+import { UserProfileDialog } from '../profile/UserProfileDialog';
 
 const NAV_ITEMS = [
   { label: 'Analytics Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 20 }} /> },
@@ -32,6 +33,10 @@ const NAV_ITEMS = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const displayName = user?.name?.trim() ? user.name : (user?.role || 'Admin');
+  const userInitial = displayName.charAt(0).toUpperCase() || 'A';
 
   return (
     <>
@@ -95,7 +100,20 @@ export function AdminSidebar() {
             justifyContent: 'space-between',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
+          <Box
+            onClick={() => setProfileOpen(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.2,
+              minWidth: 0,
+              cursor: 'pointer',
+              p: 0.5,
+              borderRadius: '8px',
+              transition: 'all 0.2s',
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+            }}
+          >
             <Avatar
               sx={{
                 width: 34,
@@ -105,11 +123,11 @@ export function AdminSidebar() {
                 fontWeight: 700,
               }}
             >
-              {user ? user.name[0] : 'A'}
+              {userInitial}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="body2" noWrap sx={{ fontWeight: 700, color: '#FFFFFF' }}>
-                {user ? user.name : 'Admin'}
+                {displayName}
               </Typography>
               <Typography variant="caption" noWrap sx={{ color: '#64748B', display: 'block' }}>
                 {user ? user.role : 'ADMIN'}
@@ -124,6 +142,9 @@ export function AdminSidebar() {
           </Tooltip>
         </Box>
       </Box>
+
+      {/* User Profile Dialog */}
+      <UserProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
 
       {/* 2. Mobile Horizontal Quick-Navigation Bar */}
       <Box

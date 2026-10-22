@@ -27,6 +27,13 @@ router.get(
   AuthController.me
 );
 
+// GET /auth/profile - Return full user profile with order metrics
+router.get(
+  '/profile',
+  authenticate,
+  AuthController.me
+);
+
 // POST /auth/admins - Create a new Store Admin with auto-generated credentials (SUPERADMIN only)
 router.post(
   '/admins',

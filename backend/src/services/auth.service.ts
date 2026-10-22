@@ -94,7 +94,7 @@ export class AuthService {
   }
 
   /**
-   * Fetch current user profile
+   * Fetch current user profile with complete metrics and recent orders
    */
   static async getCurrentUser(userId: string) {
     const user = await prisma.user.findUnique({
@@ -105,6 +105,38 @@ export class AuthService {
         email: true,
         role: true,
         created_at: true,
+        _count: {
+          select: {
+            orders: true,
+            stores: true,
+          },
+        },
+        orders: {
+          take: 5,
+          orderBy: { created_at: 'desc' },
+          select: {
+            id: true,
+            total_amount: true,
+            status: true,
+            created_at: true,
+            store: {
+              select: {
+                id: true,
+                name: true,
+                location: true,
+              },
+            },
+          },
+        },
+        stores: {
+          take: 5,
+          select: {
+            id: true,
+            name: true,
+            location: true,
+            is_active: true,
+          },
+        },
       },
     });
 
@@ -112,14 +144,50 @@ export class AuthService {
       throw new NotFoundError('User profile not found');
     }
 
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      created_at: user.created_at,
+      ordersCount: user._count.orders,
+      recentOrders: user.orders,
+      storesCount: user._count.stores,
+      managedStores: user.stores,
+    };
   }
 
   /**
-   * Fetch all registered users (Admin only)
+   * Fetch all registered users with optional search, role filter, and pagination (Admin only)
    */
-  static async getAllUsers() {
-    return prisma.user.findMany({
+  static async getAllUsers(query?: { search?: string; q?: string; role?: string; page?: number | string; limit?: number | string }) {
+    const where: any = {};
+    const searchTerm = (query?.search || query?.q || '').trim();
+
+    if (searchTerm) {
+      where.OR = [
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query?.role) {
+      const roleUpper = query.role.toUpperCase();
+      if (['SUPERADMIN', 'ADMIN', 'USER'].includes(roleUpper)) {
+        where.role = roleUpper;
+      }
+    }
+
+    const total = await prisma.user.count({ where });
+
+    const page = query?.page ? Math.max(Number(query.page), 1) : 1;
+    const limit = query?.limit ? Math.min(Math.max(Number(query.limit), 1), 100) : undefined;
+    const skip = limit ? (page - 1) * limit : undefined;
+
+    const users = await prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
       select: {
         id: true,
         name: true,
@@ -129,6 +197,14 @@ export class AuthService {
       },
       orderBy: { created_at: 'desc' },
     });
+
+    return {
+      users,
+      total,
+      page,
+      limit: limit || total,
+      totalPages: Math.max(Math.ceil(total / (limit || total || 1)), 1),
+    };
   }
 
   /**

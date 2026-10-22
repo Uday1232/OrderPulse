@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Box,
@@ -14,8 +14,12 @@ import {
   Alert,
   Divider,
   Stack,
-  IconButton,
-  Tooltip,
+  TextField,
+  InputAdornment,
+  MenuItem,
+  Select,
+  FormControl,
+  Pagination,
 } from '@mui/material';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -26,134 +30,121 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
 
 import { useAuth } from '../../hooks/useAuth';
 import { ApiService } from '../../services/api';
-import { Order, OrderStatus } from '../../types/order';
+import { Order, OrderStatus, PaginationMeta } from '../../types/order';
 import { useOrderSocket } from '../../context/SocketContext';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useStores } from '../../hooks/useStores';
 
 export default function MyOrdersPage() {
   const { user, isAuthenticated } = useAuth();
   const { activePreparedOrder } = useOrderSocket();
-  const [orders, setOrders] = useState<Order[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('sp_my_orders');
-        return stored ? JSON.parse(stored) : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
+  const { stores } = useStores();
+
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 5,
+    totalPages: 1,
   });
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [storeFilter, setStoreFilter] = useState<string>('ALL');
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!user) {
       setIsLoading(false);
       return;
     }
-    
-    // Only show full loading spinner if we don't have any cached orders yet
-    if (orders.length === 0) {
-      setIsLoading(true);
-    }
+
+    setIsLoading(true);
     setErrorMsg(null);
 
     try {
-      const res = await ApiService.getMyOrders();
+      const res = await ApiService.getMyOrders({
+        search: debouncedSearch.trim() || undefined,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        store_id: storeFilter !== 'ALL' ? storeFilter : undefined,
+        page,
+        limit: 5,
+      });
+
       if (res && Array.isArray(res.data)) {
         setOrders(res.data);
+        if (res.pagination) {
+          setPagination(res.pagination);
+        } else {
+          setPagination({
+            total: res.data.length,
+            page,
+            limit: 5,
+            totalPages: Math.max(1, Math.ceil(res.data.length / 5)),
+          });
+        }
         localStorage.setItem('sp_my_orders', JSON.stringify(res.data));
       }
     } catch (err: unknown) {
-      // Fallback 1: If tracked orders exist in localStorage, fetch them by ID
+      // Fallback: If local storage has orders, try filtering them
       try {
-        const trackedIds: string[] = JSON.parse(localStorage.getItem('sp_tracked_orders') || '[]');
-        if (trackedIds.length > 0) {
-          const fetchedOrders = await Promise.all(
-            trackedIds.map(async (id) => {
-              try {
-                const singleRes = await ApiService.getOrderById(id);
-                return singleRes.data;
-              } catch {
-                return null;
-              }
-            })
-          );
-          const validOrders = fetchedOrders.filter((o): o is Order => Boolean(o));
-          if (validOrders.length > 0) {
-            setOrders(validOrders);
-            localStorage.setItem('sp_my_orders', JSON.stringify(validOrders));
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch {}
-
-      // Fallback 2: Direct recovery across stores for user's account
-      try {
-        const storesRes = await ApiService.getStores();
-        const storesList = storesRes.data || [];
-        const matchedOrders: Order[] = [];
-
-        await Promise.all(
-          storesList.map(async (store) => {
-            try {
-              const res = await ApiService.getOrders({ store_id: store.id, limit: 50 });
-              const storeOrders = Array.isArray(res.data)
-                ? res.data
-                : ((res.data as any)?.orders || []);
-
-              storeOrders.forEach((ord: Order) => {
-                if (ord.user_id === user.id) {
-                  matchedOrders.push({
-                    ...ord,
-                    store: ord.store || { id: store.id, name: store.name, location: store.location },
-                  });
-                }
-              });
-            } catch {}
-          })
-        );
-
-        if (matchedOrders.length > 0) {
-          matchedOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setOrders(matchedOrders);
-          localStorage.setItem('sp_my_orders', JSON.stringify(matchedOrders));
-          setIsLoading(false);
-          return;
-        }
-      } catch {}
-
-      // Fallback 3: Keep existing local orders if present, avoid displaying "Validation failed"
-      const currentStored = localStorage.getItem('sp_my_orders');
-      if (currentStored) {
-        try {
-          const parsed = JSON.parse(currentStored);
+        const stored = localStorage.getItem('sp_my_orders');
+        if (stored) {
+          const parsed: Order[] = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setOrders(parsed);
+            let filtered = parsed;
+            if (statusFilter !== 'ALL') {
+              filtered = filtered.filter((o) => o.status === statusFilter);
+            }
+            if (storeFilter !== 'ALL') {
+              filtered = filtered.filter((o) => o.store_id === storeFilter);
+            }
+            if (debouncedSearch.trim()) {
+              const q = debouncedSearch.toLowerCase();
+              filtered = filtered.filter((o) => o.id.toLowerCase().includes(q));
+            }
+            setOrders(filtered);
+            setPagination({
+              total: filtered.length,
+              page: 1,
+              limit: 5,
+              totalPages: Math.max(1, Math.ceil(filtered.length / 5)),
+            });
             setIsLoading(false);
             return;
           }
-        } catch {}
-      }
+        }
+      } catch {}
+
+      setErrorMsg((err as Error)?.message || 'Failed to fetch your orders');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, debouncedSearch, statusFilter, storeFilter, page]);
 
   useEffect(() => {
     fetchOrders();
-  }, [user]);
+  }, [fetchOrders]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, storeFilter]);
 
   // If a live status update fires, refresh orders list
   useEffect(() => {
     if (activePreparedOrder) {
       fetchOrders();
     }
-  }, [activePreparedOrder]);
+  }, [activePreparedOrder, fetchOrders]);
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -161,6 +152,8 @@ export default function MyOrdersPage() {
         return { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', label: 'Order Placed', icon: <PendingActionsIcon sx={{ fontSize: 16 }} /> };
       case 'PREPARING':
         return { bg: '#FFF7ED', color: '#EA580C', border: '#FED7AA', label: 'In Kitchen (Preparing)', icon: <AutorenewIcon sx={{ fontSize: 16 }} /> };
+      case 'PREPARED':
+        return { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0', label: 'Prepared / Ready', icon: <CheckCircleIcon sx={{ fontSize: 16 }} /> };
       case 'COMPLETED':
         return { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0', label: 'Ready / Completed', icon: <CheckCircleIcon sx={{ fontSize: 16 }} /> };
       case 'CANCELLED':
@@ -239,7 +232,7 @@ export default function MyOrdersPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: 4,
+            mb: 3.5,
             flexWrap: 'wrap',
             gap: 2,
           }}
@@ -258,7 +251,7 @@ export default function MyOrdersPage() {
                 My Orders
               </Typography>
               <Chip
-                label={`${orders.length} ${orders.length === 1 ? 'Order' : 'Orders'}`}
+                label={`${pagination.total} ${pagination.total === 1 ? 'Order' : 'Orders'}`}
                 size="small"
                 sx={{
                   backgroundColor: '#FFEDD5',
@@ -269,7 +262,7 @@ export default function MyOrdersPage() {
               />
             </Box>
             <Typography variant="body2" sx={{ color: '#64748B', mt: 0.5 }}>
-              View your order history, live meal preparation status, and digital receipts in real-time.
+              Backend-powered search, live status filtering, and digital receipts in real-time.
             </Typography>
           </Box>
 
@@ -312,6 +305,95 @@ export default function MyOrdersPage() {
           </Box>
         </Box>
 
+        {/* Backend Filtering & Search Bar Panel */}
+        <Card
+          sx={{
+            p: 2,
+            mb: 3.5,
+            borderRadius: '16px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            {/* Search Input */}
+            <Grid item xs={12} md={5}>
+              <TextField
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search by Order ID or item..."
+                size="small"
+                fullWidth
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#94A3B8', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    backgroundColor: '#F8FAFC',
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Status Filter Chips */}
+            <Grid item xs={12} sm={7} md={4}>
+              <Box sx={{ display: 'flex', gap: 0.8, overflowX: 'auto', py: 0.2 }}>
+                {[
+                  { id: 'ALL', label: 'All' },
+                  { id: 'PLACED', label: 'Placed' },
+                  { id: 'PREPARED', label: 'Prepared' },
+                  { id: 'CANCELLED', label: 'Cancelled' },
+                ].map((st) => (
+                  <Chip
+                    key={st.id}
+                    label={st.label}
+                    onClick={() => setStatusFilter(st.id)}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      backgroundColor: statusFilter === st.id ? '#0F172A' : '#F1F5F9',
+                      color: statusFilter === st.id ? '#FFFFFF' : '#475569',
+                      '&:hover': {
+                        backgroundColor: statusFilter === st.id ? '#1E293B' : '#E2E8F0',
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
+            </Grid>
+
+            {/* Store Filter Dropdown */}
+            <Grid item xs={12} sm={5} md={3}>
+              <FormControl size="small" fullWidth>
+                <Select
+                  value={storeFilter}
+                  onChange={(e) => setStoreFilter(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    backgroundColor: '#F8FAFC',
+                  }}
+                >
+                  <MenuItem value="ALL">All Stores ({stores.length})</MenuItem>
+                  {stores.map((st) => (
+                    <MenuItem key={st.id} value={st.id}>
+                      {st.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Card>
+
         {/* Error message */}
         {errorMsg && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: '14px' }}>
@@ -319,15 +401,15 @@ export default function MyOrdersPage() {
           </Alert>
         )}
 
-        {/* Loading Spinner */}
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress sx={{ color: '#FF7A00' }} />
+        {/* Orders Listing State */}
+        {isLoading ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 10 }}>
+            <CircularProgress sx={{ color: '#FF7A00', mb: 2 }} />
+            <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 600 }}>
+              Loading your orders from backend...
+            </Typography>
           </Box>
-        )}
-
-        {/* Empty Orders State */}
-        {!isLoading && orders.length === 0 && (
+        ) : orders.length === 0 ? (
           <Card
             sx={{
               p: 6,
@@ -335,15 +417,14 @@ export default function MyOrdersPage() {
               textAlign: 'center',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E2E8F0',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
             }}
           >
             <Box
               sx={{
                 width: 64,
                 height: 64,
-                borderRadius: '16px',
-                backgroundColor: '#F1F5F9',
+                borderRadius: '50%',
+                backgroundColor: '#F8FAFC',
                 color: '#94A3B8',
                 display: 'flex',
                 alignItems: 'center',
@@ -354,44 +435,60 @@ export default function MyOrdersPage() {
             >
               <ReceiptLongIcon sx={{ fontSize: 32 }} />
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#334155', mb: 0.5 }}>
-              No orders placed yet
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', mb: 1 }}>
+              No Orders Found
             </Typography>
-            <Typography variant="body2" sx={{ color: '#64748B', mb: 3, maxWidth: 360, mx: 'auto' }}>
-              Explore our chef-curated menus, burgers, artisanal pizzas, and refreshing drinks!
+            <Typography variant="body2" sx={{ color: '#64748B', maxWidth: 400, mx: 'auto', mb: 3 }}>
+              {debouncedSearch || statusFilter !== 'ALL' || storeFilter !== 'ALL'
+                ? 'No orders match your filter criteria. Try clearing search or selecting a different status.'
+                : "You haven't placed any orders yet. Visit our delicious menu and place your first meal!"}
             </Typography>
-            <Button
-              component={Link}
-              href="/pos"
-              variant="contained"
-              sx={{
-                backgroundColor: '#FF7A00',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                borderRadius: '12px',
-                px: 3.5,
-                py: 1,
-                boxShadow: '0 4px 14px rgba(255, 122, 0, 0.3)',
-                '&:hover': { backgroundColor: '#E06500' },
-              }}
-            >
-              Browse Menu & Order
-            </Button>
+            {debouncedSearch || statusFilter !== 'ALL' || storeFilter !== 'ALL' ? (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSearchInput('');
+                  setStatusFilter('ALL');
+                  setStoreFilter('ALL');
+                }}
+                sx={{
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  borderColor: '#CBD5E1',
+                  color: '#475569',
+                }}
+              >
+                Reset Filters
+              </Button>
+            ) : (
+              <Button
+                component={Link}
+                href="/pos"
+                variant="contained"
+                sx={{
+                  backgroundColor: '#FF7A00',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  px: 3,
+                  '&:hover': { backgroundColor: '#E06500' },
+                }}
+              >
+                Browse Menu
+              </Button>
+            )}
           </Card>
-        )}
-
-        {/* Orders Cards Grid */}
-        {!isLoading && orders.length > 0 && (
+        ) : (
           <Stack spacing={2.5}>
             {orders.map((ord) => {
-              const statusInfo = getStatusColor(ord.status);
-              const itemsList = Array.isArray(ord.items) ? (ord.items as any[]) : [];
+              const statusConfig = getStatusColor(ord.status);
+              const itemsList = Array.isArray(ord.items) ? ord.items : [];
               const orderDate = new Date(ord.created_at).toLocaleDateString('en-IN', {
-                day: 'numeric',
                 month: 'short',
+                day: 'numeric',
                 year: 'numeric',
-              });
-              const orderTime = new Date(ord.created_at).toLocaleTimeString('en-IN', {
                 hour: '2-digit',
                 minute: '2-digit',
               });
@@ -400,53 +497,66 @@ export default function MyOrdersPage() {
                 <Card
                   key={ord.id}
                   sx={{
-                    borderRadius: '20px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
                     p: { xs: 2.5, sm: 3 },
+                    borderRadius: '20px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.07)',
                       borderColor: '#CBD5E1',
                     },
                   }}
                 >
+                  {/* Top Bar: Order ID, Date, and Status */}
                   <Box
                     sx={{
                       display: 'flex',
-                      flexDirection: { xs: 'column', sm: 'row' },
                       alignItems: { xs: 'flex-start', sm: 'center' },
                       justifyContent: 'space-between',
-                      mb: 2,
+                      flexDirection: { xs: 'column', sm: 'row' },
                       gap: 1.5,
+                      mb: 2,
                     }}
                   >
-                    {/* Store & Order Number */}
                     <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <StorefrontIcon sx={{ color: '#FF7A00', fontSize: 20 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '1.05rem' }}>
-                          {ord.store?.name || 'Store Order'}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '1.1rem' }}>
+                          Order #{ord.id.slice(0, 8)}
+                        </Typography>
+                        <Chip
+                          icon={<StorefrontIcon sx={{ fontSize: '14px !important' }} />}
+                          label={ord.store?.name || 'Restaurant Outlet'}
+                          size="small"
+                          sx={{
+                            backgroundColor: '#F8FAFC',
+                            color: '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.72rem',
+                            border: '1px solid #E2E8F0',
+                          }}
+                        />
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, color: '#94A3B8', mt: 0.5 }}>
+                        <AccessTimeIcon sx={{ fontSize: 14 }} />
+                        <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                          {orderDate}
                         </Typography>
                       </Box>
-                      <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600 }}>
-                        Order ID: #{ord.id.slice(0, 8).toUpperCase()} • {orderDate} at {orderTime}
-                      </Typography>
                     </Box>
 
                     {/* Status Badge */}
                     <Chip
-                      icon={statusInfo.icon || undefined}
-                      label={statusInfo.label}
+                      icon={statusConfig.icon || undefined}
+                      label={statusConfig.label}
                       sx={{
-                        backgroundColor: statusInfo.bg,
-                        color: statusInfo.color,
-                        border: `1px solid ${statusInfo.border}`,
-                        fontWeight: 700,
-                        fontSize: '0.8rem',
-                        px: 1,
-                        py: 0.5,
+                        backgroundColor: statusConfig.bg,
+                        color: statusConfig.color,
+                        border: `1px solid ${statusConfig.border}`,
+                        fontWeight: 800,
+                        fontSize: '0.78rem',
+                        px: 0.5,
                         borderRadius: '10px',
                       }}
                     />
@@ -527,6 +637,26 @@ export default function MyOrdersPage() {
                 </Card>
               );
             })}
+
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2, pb: 4 }}>
+                <Pagination
+                  count={pagination.totalPages}
+                  page={page}
+                  onChange={(_, value) => setPage(value)}
+                  color="primary"
+                  sx={{
+                    '& .MuiPaginationItem-root.Mui-selected': {
+                      backgroundColor: '#FF7A00',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      '&:hover': { backgroundColor: '#E06500' },
+                    },
+                  }}
+                />
+              </Box>
+            )}
           </Stack>
         )}
       </Container>

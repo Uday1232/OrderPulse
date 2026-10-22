@@ -7,6 +7,8 @@ import {
   Category,
   Item,
   User,
+  UserProfile,
+  PaginationMeta,
   Role,
   PaymentMethod,
   PaymentStatus,
@@ -73,6 +75,25 @@ export class ApiService {
         'Content-Type': 'application/json',
         ...getAuthHeader(),
       },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch user profile: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async getUserProfile(): Promise<{ success: boolean; data: UserProfile }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -86,8 +107,21 @@ export class ApiService {
   // ==========================================
   // STORE ENDPOINTS
   // ==========================================
-  static async getStores(): Promise<{ success: boolean; data: Store[] }> {
-    const res = await fetch(`${API_BASE_URL}/api/v1/stores`, {
+  static async getStores(params?: {
+    search?: string;
+    is_active?: boolean | string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; data: Store[]; pagination?: PaginationMeta }> {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.is_active !== undefined) query.set('is_active', String(params.is_active));
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+
+    const qs = query.toString();
+    const url = `${API_BASE_URL}/api/v1/stores${qs ? `?${qs}` : ''}`;
+    const res = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
@@ -183,6 +217,44 @@ export class ApiService {
 
     return res.json();
   }
+
+  static async getStoreItems(
+    storeId: string,
+    params?: {
+      search?: string;
+      category_id?: string;
+      category?: string;
+      min_price?: number;
+      max_price?: number;
+      page?: number;
+      limit?: number;
+    }
+  ): Promise<{ success: boolean; data: Item[]; pagination?: PaginationMeta }> {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.category_id) query.set('category_id', params.category_id);
+    if (params?.category) query.set('category', params.category);
+    if (params?.min_price !== undefined) query.set('min_price', params.min_price.toString());
+    if (params?.max_price !== undefined) query.set('max_price', params.max_price.toString());
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+
+    const qs = query.toString();
+    const url = `${API_BASE_URL}/api/v1/stores/${storeId}/items${qs ? `?${qs}` : ''}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch store items: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
 
   static async createStoreItem(
     storeId: string,
@@ -306,8 +378,24 @@ export class ApiService {
     return res.json();
   }
 
-  static async getMyOrders(): Promise<{ success: boolean; data: Order[] }> {
-    let res = await fetch(`${API_BASE_URL}/api/v1/orders/my-orders`, {
+  static async getMyOrders(params?: {
+    search?: string;
+    status?: string;
+    store_id?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; data: Order[]; pagination?: PaginationMeta }> {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.status) query.set('status', params.status);
+    if (params?.store_id) query.set('store_id', params.store_id);
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+
+    const qs = query.toString();
+    const url = `${API_BASE_URL}/api/v1/orders/my-orders${qs ? `?${qs}` : ''}`;
+
+    let res = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -319,7 +407,8 @@ export class ApiService {
     if (!res.ok) {
       // Fallback check to alias route
       try {
-        const fallbackRes = await fetch(`${API_BASE_URL}/api/v1/orders/customer/my-orders`, {
+        const fallbackUrl = `${API_BASE_URL}/api/v1/orders/customer/my-orders${qs ? `?${qs}` : ''}`;
+        const fallbackRes = await fetch(fallbackUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -455,11 +544,26 @@ export class ApiService {
     return res.json();
   }
 
-  static async getUsers(): Promise<{
+  static async getUsers(params?: {
+    search?: string;
+    role?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
     success: boolean;
     data: Array<{ id: string; name: string; email: string; role: 'SUPERADMIN' | 'ADMIN' | 'USER'; created_at: string }>;
+    pagination?: PaginationMeta;
   }> {
-    const res = await fetch(`${API_BASE_URL}/api/v1/auth/users`, {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.role) query.set('role', params.role);
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+
+    const qs = query.toString();
+    const url = `${API_BASE_URL}/api/v1/auth/users${qs ? `?${qs}` : ''}`;
+
+    const res = await fetch(url, {
       headers: {
         ...getAuthHeader(),
       },

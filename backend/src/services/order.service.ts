@@ -257,15 +257,59 @@ export class OrderService {
   }
 
   /**
-   * Fetch all orders placed by a specific user
+   * Fetch orders placed by a specific user with search, status/store filtering, and pagination
    */
-  static async getUserOrders(userId: string): Promise<Order[]> {
-    return prisma.order.findMany({
-      where: { user_id: userId },
+  static async getUserOrders(
+    userId: string,
+    query?: {
+      search?: string;
+      q?: string;
+      status?: string;
+      store_id?: string;
+      page?: number | string;
+      limit?: number | string;
+    }
+  ) {
+    const where: any = { user_id: userId };
+    const searchTerm = (query?.search || query?.q || '').trim();
+
+    if (searchTerm) {
+      where.OR = [
+        { id: { contains: searchTerm, mode: 'insensitive' } },
+        { store: { name: { contains: searchTerm, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (query?.status && query.status !== 'ALL') {
+      where.status = query.status;
+    }
+
+    if (query?.store_id && query.store_id !== 'all') {
+      where.store_id = query.store_id;
+    }
+
+    const total = await prisma.order.count({ where });
+
+    const page = query?.page ? Math.max(Number(query.page), 1) : 1;
+    const limit = query?.limit ? Math.min(Math.max(Number(query.limit), 1), 100) : 10;
+    const skip = (page - 1) * limit;
+
+    const orders = await prisma.order.findMany({
+      where,
+      skip,
+      take: limit,
       include: {
         store: { select: { id: true, name: true, location: true } },
       },
       orderBy: { created_at: 'desc' },
     });
+
+    return {
+      orders,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(Math.ceil(total / limit), 1),
+    };
   }
 }

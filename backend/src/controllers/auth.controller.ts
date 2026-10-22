@@ -41,12 +41,18 @@ export class AuthController {
     }
   }
 
-  static async getAllUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async getAllUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const users = await AuthService.getAllUsers();
+      const result = await AuthService.getAllUsers(req.query);
       res.status(200).json({
         success: true,
-        data: users,
+        data: result.users,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
       });
     } catch (error) {
       next(error);
