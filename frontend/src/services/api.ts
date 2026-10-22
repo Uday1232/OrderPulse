@@ -87,21 +87,69 @@ export class ApiService {
   }
 
   static async getUserProfile(): Promise<{ success: boolean; data: UserProfile }> {
-    const res = await fetch(`${API_BASE_URL}/api/v1/auth/profile`, {
+    const authHeader = getAuthHeader();
+    let res = await fetch(`${API_BASE_URL}/api/v1/auth/profile`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
+        ...authHeader,
       },
       cache: 'no-store',
     });
+
+    if (!res.ok) {
+      res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeader,
+        },
+        cache: 'no-store',
+      });
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `Failed to fetch user profile: HTTP ${res.status}`);
     }
 
-    return res.json();
+    const json = await res.json();
+    const rawData = json.data?.user ? json.data.user : json.data;
+
+    const profileData: UserProfile = {
+      id: rawData.id,
+      name: rawData.name,
+      email: rawData.email,
+      role: rawData.role,
+      created_at: rawData.created_at,
+      ordersCount: rawData.ordersCount,
+      storesCount: rawData.storesCount,
+      recentOrders: rawData.recentOrders,
+      managedStores: rawData.managedStores,
+    };
+
+    // If ordersCount is not provided by backend endpoint, fetch from getMyOrders
+    if (profileData.ordersCount === undefined) {
+      try {
+        const ordersRes = await ApiService.getMyOrders({ limit: 5 });
+        if (ordersRes && Array.isArray(ordersRes.data)) {
+          profileData.ordersCount = ordersRes.pagination?.total ?? ordersRes.data.length;
+          profileData.recentOrders = ordersRes.data.slice(0, 5).map((o) => ({
+            id: o.id,
+            total_amount: o.total_amount,
+            status: o.status,
+            created_at: o.created_at,
+            store: {
+              id: o.store?.id || o.store_id || 'store-default',
+              name: o.store?.name || 'Restaurant Outlet',
+              location: o.store?.location || '',
+            },
+          }));
+        }
+      } catch {}
+    }
+
+    return { success: true, data: profileData };
   }
 
   // ==========================================

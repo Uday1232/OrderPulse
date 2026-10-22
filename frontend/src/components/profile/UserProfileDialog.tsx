@@ -44,27 +44,35 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
 
   useEffect(() => {
     if (open && user) {
-      setIsLoading(true);
       setErrorMsg(null);
+      // Pre-populate with session user immediately so modal opens instantly without glitch
+      setProfile((prev) => prev || {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        created_at: user.created_at || new Date().toISOString(),
+        ordersCount: 0,
+      });
+
       ApiService.getUserProfile()
         .then((res) => {
           if (res && res.data) {
             setProfile(res.data);
           }
         })
-        .catch((err) => {
-          // Fallback to local user object
+        .catch(() => {
+          // Graceful fallback to session details without scary technical 404 alert
           if (user) {
-            setProfile({
+            setProfile((prev) => prev || {
               id: user.id,
               name: user.name,
               email: user.email,
               role: user.role,
-              created_at: new Date().toISOString(),
+              created_at: user.created_at || new Date().toISOString(),
               ordersCount: 0,
             });
           }
-          setErrorMsg(err.message || 'Failed to load profile details');
         })
         .finally(() => {
           setIsLoading(false);
@@ -179,7 +187,7 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
           </Box>
         ) : (
           <Stack spacing={2.5}>
-            {errorMsg && (
+            {errorMsg && !profile && (
               <Alert severity="info" sx={{ borderRadius: '12px', fontSize: '0.8rem' }}>
                 {errorMsg}
               </Alert>

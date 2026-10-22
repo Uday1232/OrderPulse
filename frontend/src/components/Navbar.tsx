@@ -53,14 +53,8 @@ export function Navbar() {
     return null;
   }
 
-  // "My Orders" is exclusively for regular customer accounts, strictly not for store admins or superadmins
-  const isCustomerOnly = Boolean(user && user.role === 'USER' && !isAdmin);
-
-  const NAV_LINKS = isCustomerOnly
-    ? [
-        { label: 'My Orders', path: '/my-orders', icon: <ShoppingBagIcon sx={{ fontSize: 18 }} /> },
-      ]
-    : [];
+  // Navigation links are unified in the sidebar
+  const NAV_LINKS: Array<{ label: string; path: string; icon: React.ReactNode }> = [];
 
   const ADMIN_LINKS = [
     { label: 'Analytics Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 18 }} /> },
