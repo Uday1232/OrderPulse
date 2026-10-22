@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Checkbox,
   CircularProgress,
   Alert,
   TextField,
@@ -34,6 +35,7 @@ import QrCode2Icon from '@mui/icons-material/QrCode2';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -59,11 +61,16 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
     setPaymentMethod,
   } = useCartStore();
 
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { trackOrder } = useOrderSocket();
   const { appliedOffer, applyOffer } = useOfferStore();
 
   const [tableNumber, setTableNumber] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [saveAddressToProfile, setSaveAddressToProfile] = useState(true);
+  const [isAddressAutoFilled, setIsAddressAutoFilled] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{
@@ -75,8 +82,24 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
     total: number;
     offerCode: string | null;
     paymentMethod: string;
+    deliveryAddress: string;
     timestamp: string;
   } | null>(null);
+
+  // Auto-fill address from profile or localStorage when modal opens
+  useEffect(() => {
+    if (open) {
+      setAddressError(null);
+      const savedAddress = user?.address || (typeof window !== 'undefined' ? localStorage.getItem('user_delivery_address') : '') || '';
+      if (savedAddress && savedAddress.trim().length > 0) {
+        setDeliveryAddress(savedAddress);
+        setIsAddressAutoFilled(true);
+      } else {
+        setDeliveryAddress('');
+        setIsAddressAutoFilled(false);
+      }
+    }
+  }, [open, user]);
 
   const subtotal = getTotalAmount();
   const hasMinOrder = !appliedOffer?.minOrderAmount || subtotal >= appliedOffer.minOrderAmount;
@@ -99,6 +122,13 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
       return;
     }
     if (items.length === 0) return;
+
+    const trimmedAddress = deliveryAddress.trim();
+    if (!trimmedAddress) {
+      setAddressError('Delivery address is required to place your order. Please enter your delivery address.');
+      return;
+    }
+    setAddressError(null);
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -117,10 +147,21 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
         })),
         payment_method: paymentMethod,
         payment_status: paymentMethod === 'CASH' ? ('PENDING' as const) : ('COMPLETED' as const),
+        delivery_address: trimmedAddress,
+        address: trimmedAddress,
+        save_address: saveAddressToProfile,
       };
 
       const res = await ApiService.createOrder(orderPayload);
       trackOrder(res.data.id);
+
+      // Save address to client profile state and localStorage
+      if (saveAddressToProfile || !user.address) {
+        updateUser({ address: trimmedAddress });
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_delivery_address', trimmedAddress);
+        }
+      }
 
       // Save to local storage for instant zero-lag display in My Orders
       try {
@@ -138,6 +179,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
         total: grandTotal,
         offerCode: discountAmount > 0 ? (appliedOffer?.code || null) : null,
         paymentMethod,
+        deliveryAddress: trimmedAddress,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       });
       clearCart();
@@ -292,6 +334,20 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                   sx={{ fontWeight: 700, fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D' }}
                 />
               </Box>
+
+              {orderSuccess.deliveryAddress && (
+                <Box sx={{ mt: 1.5, pt: 1.2, borderTop: '1px dashed #CBD5E1' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, color: '#64748B', mb: 0.3 }}>
+                    <LocationOnIcon sx={{ fontSize: 15, color: '#FF7A00' }} />
+                    <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Delivery Address
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: '#1E293B', fontWeight: 600, fontSize: '0.82rem', pl: 2.5 }}>
+                    {orderSuccess.deliveryAddress}
+                  </Typography>
+                </Box>
+              )}
             </Paper>
 
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -497,6 +553,82 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
             )}
 
             <Divider sx={{ my: 2 }} />
+
+            {/* Delivery Address Section (Required) */}
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <LocationOnIcon sx={{ color: '#FF7A00', fontSize: 18 }} />
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
+                    Delivery Address <span style={{ color: '#EF4444' }}>*</span>
+                  </Typography>
+                </Box>
+                {isAddressAutoFilled && deliveryAddress && (
+                  <Chip
+                    icon={<CheckCircleOutlineIcon sx={{ fontSize: '13px !important', color: '#16A34A !important' }} />}
+                    label="Auto-filled from profile"
+                    size="small"
+                    sx={{
+                      backgroundColor: '#ECFDF5',
+                      color: '#15803D',
+                      border: '1px solid #A7F3D0',
+                      fontWeight: 700,
+                      fontSize: '0.68rem',
+                      height: 22,
+                    }}
+                  />
+                )}
+              </Box>
+
+              <TextField
+                multiline
+                rows={2}
+                fullWidth
+                placeholder="Enter complete delivery address (Flat / House No, Street, Landmark, City, Pincode)..."
+                value={deliveryAddress}
+                onChange={(e) => {
+                  setDeliveryAddress(e.target.value);
+                  if (addressError) setAddressError(null);
+                }}
+                error={Boolean(addressError)}
+                helperText={addressError}
+                InputProps={{
+                  sx: {
+                    borderRadius: '12px',
+                    backgroundColor: '#F8FAFC',
+                    fontSize: '0.85rem',
+                    '&.Mui-focused': {
+                      backgroundColor: '#FFFFFF',
+                    },
+                  },
+                }}
+              />
+
+              {user && (
+                <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={saveAddressToProfile}
+                        onChange={(e) => setSaveAddressToProfile(e.target.checked)}
+                        size="small"
+                        sx={{
+                          color: '#CBD5E1',
+                          '&.Mui-checked': { color: '#FF7A00' },
+                          p: 0.5,
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
+                        Save this address to my profile for future orders
+                      </Typography>
+                    }
+                    sx={{ ml: 0 }}
+                  />
+                </Box>
+              )}
+            </Box>
 
             {/* Table Number or Notes */}
             <Box sx={{ mb: 2 }}>

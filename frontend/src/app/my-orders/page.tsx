@@ -32,6 +32,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 import { useAuth } from '../../hooks/useAuth';
 import { ApiService } from '../../services/api';
@@ -602,6 +603,29 @@ export default function MyOrdersPage() {
                   </Box>
 
                   <Divider sx={{ my: 1.5, borderColor: '#F1F5F9' }} />
+
+                  {/* Delivery Address if present */}
+                  {ord.delivery_address && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.8,
+                        backgroundColor: '#F8FAFC',
+                        p: 1,
+                        px: 1.5,
+                        borderRadius: '10px',
+                        border: '1px solid #E2E8F0',
+                        mb: 1.5,
+                      }}
+                    >
+                      <LocationOnIcon sx={{ fontSize: 16, color: '#FF7A00', flexShrink: 0 }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155' }}>
+                        <span style={{ color: '#64748B', fontWeight: 500 }}>Delivered to: </span>
+                        {ord.delivery_address}
+                      </Typography>
+                    </Box>
+                  )}
 
                   {/* Footer Total */}
                   <Box

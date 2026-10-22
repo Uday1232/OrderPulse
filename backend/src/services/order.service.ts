@@ -78,6 +78,8 @@ export class OrderService {
       }
     }
 
+    const deliveryAddress = (input.delivery_address || input.address || '').trim();
+
     // 5. Persist order in PostgreSQL
     const order = await prisma.order.create({
       data: {
@@ -85,6 +87,7 @@ export class OrderService {
         user_id: validUserId,
         items: normalizedItems,
         total_amount: totalAmount,
+        delivery_address: deliveryAddress,
         status: orderStatus,
         payment_method: input.payment_method,
         payment_status: paymentStatus,
@@ -94,6 +97,24 @@ export class OrderService {
         user: { select: { id: true, name: true, email: true } },
       },
     });
+
+    // 6. If user is authenticated and entered a delivery address, auto-save to profile if requested or currently empty
+    if (validUserId && deliveryAddress) {
+      try {
+        const curUser = await prisma.user.findUnique({
+          where: { id: validUserId },
+          select: { address: true },
+        });
+        if (input.save_address || !curUser?.address) {
+          await prisma.user.update({
+            where: { id: validUserId },
+            data: { address: deliveryAddress },
+          });
+        }
+      } catch (err) {
+        logger.warn(`Could not auto-save user address: ${(err as Error).message}`);
+      }
+    }
 
     logger.info(`Order created: ${order.id} for store ${order.store_id}`, {
       orderId: order.id,

@@ -9,6 +9,7 @@ interface AuthState {
   isLoading: boolean;
 
   setAuth: (token: string, user: User) => void;
+  updateUser: (updatedFields: Partial<User>) => void;
   logout: () => void;
   initialize: () => void;
 }
@@ -24,6 +25,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.setItem('tmbill_token', token);
       localStorage.setItem('tmbill_user', JSON.stringify(user));
+      if (user.address) {
+        localStorage.setItem('user_delivery_address', user.address);
+      }
     }
     set({
       user,
@@ -32,6 +36,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAdmin: user.role === 'ADMIN' || user.role === 'SUPERADMIN',
       isLoading: false,
     });
+  },
+
+  updateUser: (updatedFields: Partial<User>) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
+    const newUser = { ...currentUser, ...updatedFields };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tmbill_user', JSON.stringify(newUser));
+      if (newUser.address) {
+        localStorage.setItem('user_delivery_address', newUser.address);
+      }
+    }
+    set({ user: newUser });
   },
 
   logout: () => {

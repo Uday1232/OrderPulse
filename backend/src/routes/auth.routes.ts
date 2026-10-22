@@ -34,6 +34,11 @@ router.get(
   AuthController.me
 );
 
+// PATCH & PUT /auth/profile - Update user profile (delivery address, name)
+router.patch('/profile', authenticate, AuthController.updateProfile);
+router.put('/profile', authenticate, AuthController.updateProfile);
+router.patch('/me', authenticate, AuthController.updateProfile);
+
 // POST /auth/admins - Create a new Store Admin with auto-generated credentials (SUPERADMIN only)
 router.post(
   '/admins',

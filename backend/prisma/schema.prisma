@@ -39,6 +39,7 @@ model User {
   email         String   @unique
   password_hash String   @map("password_hash")
   role          Role     @default(USER)
+  address       String?  @default("") @map("address")
   created_at    DateTime @default(now()) @map("created_at")
 
   stores        Store[]  @relation("AdminStores")
@@ -96,17 +97,18 @@ model Item {
 }
 
 model Order {
-  id             String        @id @default(uuid()) @db.Uuid
-  store_id       String        @db.Uuid @map("store_id")
-  store          Store         @relation(fields: [store_id], references: [id], onDelete: Cascade)
-  user_id        String?       @db.Uuid @map("user_id")
-  user           User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
-  items          Json          @map("items")
-  total_amount   Float         @map("total_amount")
-  status         OrderStatus   @default(PENDING)
-  payment_method PaymentMethod @default(CASH) @map("payment_method")
-  payment_status PaymentStatus @default(PENDING) @map("payment_status")
-  created_at     DateTime      @default(now()) @map("created_at")
+  id               String        @id @default(uuid()) @db.Uuid
+  store_id         String        @db.Uuid @map("store_id")
+  store            Store         @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  user_id          String?       @db.Uuid @map("user_id")
+  user             User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  items            Json          @map("items")
+  total_amount     Float         @map("total_amount")
+  delivery_address String?       @default("") @map("delivery_address")
+  status           OrderStatus   @default(PENDING)
+  payment_method   PaymentMethod @default(CASH) @map("payment_method")
+  payment_status   PaymentStatus @default(PENDING) @map("payment_status")
+  created_at       DateTime      @default(now()) @map("created_at")
 
   @@index([store_id])
   @@index([created_at])
@@ -116,16 +118,17 @@ model Order {
 }
 
 model OrderArchive {
-  id             String        @id @db.Uuid
-  store_id       String        @db.Uuid @map("store_id")
-  user_id        String?       @db.Uuid @map("user_id")
-  items          Json          @map("items")
-  total_amount   Float         @map("total_amount")
-  status         OrderStatus
-  payment_method PaymentMethod @default(CASH) @map("payment_method")
-  payment_status PaymentStatus @default(COMPLETED) @map("payment_status")
-  created_at     DateTime      @map("created_at")
-  archived_at    DateTime      @default(now()) @map("archived_at")
+  id               String        @id @db.Uuid
+  store_id         String        @db.Uuid @map("store_id")
+  user_id          String?       @db.Uuid @map("user_id")
+  items            Json          @map("items")
+  total_amount     Float         @map("total_amount")
+  delivery_address String?       @default("") @map("delivery_address")
+  status           OrderStatus
+  payment_method   PaymentMethod @default(CASH) @map("payment_method")
+  payment_status   PaymentStatus @default(COMPLETED) @map("payment_status")
+  created_at       DateTime      @map("created_at")
+  archived_at      DateTime      @default(now()) @map("archived_at")
 
   @@index([store_id])
   @@index([created_at])

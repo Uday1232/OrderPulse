@@ -17,6 +17,7 @@ import {
   Stack,
   CircularProgress,
   Alert,
+  TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -26,6 +27,9 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import EmailIcon from '@mui/icons-material/Email';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ShieldIcon from '@mui/icons-material/Shield';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -37,20 +41,33 @@ interface UserProfileDialogProps {
 }
 
 export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Delivery Address Edit State
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addressInput, setAddressInput] = useState('');
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
 
   useEffect(() => {
     if (open && user) {
       setErrorMsg(null);
+      setSuccessMsg(null);
+      setIsEditingAddress(false);
+
+      const initialAddress = user.address || (typeof window !== 'undefined' ? localStorage.getItem('user_delivery_address') : '') || '';
+      setAddressInput(initialAddress);
+
       // Pre-populate with session user immediately so modal opens instantly without glitch
       setProfile((prev) => prev || {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        address: initialAddress,
         created_at: user.created_at || new Date().toISOString(),
         ordersCount: 0,
       });
@@ -59,6 +76,12 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
         .then((res) => {
           if (res && res.data) {
             setProfile(res.data);
+            if (res.data.address) {
+              setAddressInput(res.data.address);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('user_delivery_address', res.data.address);
+              }
+            }
           }
         })
         .catch(() => {
@@ -69,6 +92,7 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
               name: user.name,
               email: user.email,
               role: user.role,
+              address: initialAddress,
               created_at: user.created_at || new Date().toISOString(),
               ordersCount: 0,
             });
@@ -79,6 +103,33 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
         });
     }
   }, [open, user]);
+
+  const handleSaveAddress = async () => {
+    const trimmed = addressInput.trim();
+    if (!trimmed) return;
+
+    setIsSavingAddress(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await ApiService.updateProfile({ address: trimmed });
+      const updatedAddr = res.data?.address || trimmed;
+
+      setProfile((prev) => (prev ? { ...prev, address: updatedAddr } : null));
+      updateUser({ address: updatedAddr });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user_delivery_address', updatedAddr);
+      }
+      setIsEditingAddress(false);
+      setSuccessMsg('Delivery address saved to your profile!');
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Failed to update address');
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -187,9 +238,15 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
           </Box>
         ) : (
           <Stack spacing={2.5}>
-            {errorMsg && !profile && (
-              <Alert severity="info" sx={{ borderRadius: '12px', fontSize: '0.8rem' }}>
+            {errorMsg && (
+              <Alert severity="error" sx={{ borderRadius: '12px', fontSize: '0.8rem' }}>
                 {errorMsg}
+              </Alert>
+            )}
+
+            {successMsg && (
+              <Alert severity="success" sx={{ borderRadius: '12px', fontSize: '0.8rem' }}>
+                {successMsg}
               </Alert>
             )}
 
@@ -275,6 +332,109 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
                   </Typography>
                 </Box>
               </Stack>
+            </Box>
+
+            {/* Saved Delivery Address Card */}
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: '14px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <LocationOnIcon sx={{ color: '#FF7A00', fontSize: 18 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Saved Delivery Address
+                  </Typography>
+                </Box>
+                {!isEditingAddress && (
+                  <Button
+                    size="small"
+                    startIcon={<EditIcon sx={{ fontSize: 13 }} />}
+                    onClick={() => {
+                      setAddressInput(profile?.address || user?.address || '');
+                      setIsEditingAddress(true);
+                    }}
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#FF7A00',
+                      p: 0,
+                      minWidth: 'auto',
+                      '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
+                    }}
+                  >
+                    {profile?.address || user?.address ? 'Edit' : '+ Add Address'}
+                  </Button>
+                )}
+              </Box>
+
+              {isEditingAddress ? (
+                <Box sx={{ mt: 1 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={2}
+                    placeholder="Enter flat / house no., street, landmark, city, pincode..."
+                    value={addressInput}
+                    onChange={(e) => setAddressInput(e.target.value)}
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        backgroundColor: '#F8FAFC',
+                      },
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1.5 }}>
+                    <Button
+                      size="small"
+                      onClick={() => setIsEditingAddress(false)}
+                      disabled={isSavingAddress}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={handleSaveAddress}
+                      disabled={isSavingAddress || !addressInput.trim()}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        borderRadius: '8px',
+                        backgroundColor: '#FF7A00',
+                        color: '#FFFFFF',
+                        px: 2,
+                        '&:hover': { backgroundColor: '#E06500' },
+                      }}
+                    >
+                      {isSavingAddress ? <CircularProgress size={14} color="inherit" /> : 'Save Address'}
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ mt: 0.5 }}>
+                  {profile?.address || user?.address ? (
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                      <Typography variant="body2" sx={{ color: '#1E293B', fontWeight: 500, fontSize: '0.85rem', lineHeight: 1.5 }}>
+                        {profile?.address || user?.address}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" sx={{ color: '#94A3B8', fontStyle: 'italic', fontSize: '0.8rem' }}>
+                      No address saved yet. Save your address here for automatic pre-fill during checkout.
+                    </Typography>
+                  )}
+                </Box>
+              )}
             </Box>
 
             {/* Recent Orders Section */}

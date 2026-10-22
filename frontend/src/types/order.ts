@@ -11,6 +11,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  address?: string;
   created_at?: string;
 }
 
@@ -97,6 +98,7 @@ export interface Order {
   user_id?: string | null;
   items: OrderItem[];
   total_amount: number;
+  delivery_address?: string;
   status: OrderStatus;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;

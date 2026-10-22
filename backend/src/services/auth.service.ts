@@ -13,6 +13,7 @@ export interface AuthResponse {
     name: string;
     email: string;
     role: Role;
+    address?: string;
   };
   token: string;
 }
@@ -56,6 +57,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        address: user.address || '',
       },
       token,
     };
@@ -88,6 +90,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        address: user.address || '',
       },
       token,
     };
@@ -104,6 +107,7 @@ export class AuthService {
         name: true,
         email: true,
         role: true,
+        address: true,
         created_at: true,
         _count: {
           select: {
@@ -149,12 +153,37 @@ export class AuthService {
       name: user.name,
       email: user.email,
       role: user.role,
+      address: user.address || '',
       created_at: user.created_at,
       ordersCount: user._count.orders,
       recentOrders: user.orders,
       storesCount: user._count.stores,
       managedStores: user.stores,
     };
+  }
+
+  /**
+   * Update user profile information such as delivery address or display name
+   */
+  static async updateUserProfile(userId: string, data: { name?: string; address?: string }) {
+    const updateData: { name?: string; address?: string } = {};
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.address !== undefined) updateData.address = data.address.trim();
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        address: true,
+        created_at: true,
+      },
+    });
+
+    return user;
   }
 
   /**

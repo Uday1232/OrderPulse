@@ -480,6 +480,9 @@ export class ApiService {
     store_id: string;
     user_id?: string | null;
     items: Array<{ item_id?: string; name: string; qty?: number; quantity?: number; price?: number; unit_price?: number }>;
+    delivery_address?: string;
+    address?: string;
+    save_address?: boolean;
     payment_method?: PaymentMethod;
     payment_status?: PaymentStatus;
     status?: OrderStatus;
@@ -496,6 +499,39 @@ export class ApiService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || err.details?.[0]?.message || `Failed to create order: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  static async updateProfile(data: {
+    name?: string;
+    address?: string;
+  }): Promise<{ success: boolean; data: UserProfile; message?: string }> {
+    const authHeader = getAuthHeader();
+    let res = await fetch(`${API_BASE_URL}/api/v1/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeader,
+        },
+        body: JSON.stringify(data),
+      });
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to update profile: HTTP ${res.status}`);
     }
 
     return res.json();

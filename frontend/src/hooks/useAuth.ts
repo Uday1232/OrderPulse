@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { ApiService } from '../services/api';
 
 export function useAuth() {
-  const { user, token, isAuthenticated, isAdmin, isLoading, setAuth, logout, initialize } =
+  const { user, token, isAuthenticated, isAdmin, isLoading, setAuth, updateUser, logout, initialize } =
     useAuthStore();
 
   useEffect(() => {
@@ -37,6 +37,7 @@ export function useAuth() {
     isLoading,
     login,
     register,
+    updateUser,
     logout,
   };
 }

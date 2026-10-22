@@ -41,6 +41,19 @@ export class AuthController {
     }
   }
 
+  static async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const updatedUser = await AuthService.updateUserProfile(req.user!.id, req.body);
+      res.status(200).json({
+        success: true,
+        data: updatedUser,
+        message: 'Profile updated successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await AuthService.getAllUsers(req.query);
