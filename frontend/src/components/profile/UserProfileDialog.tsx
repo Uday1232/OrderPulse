@@ -58,11 +58,25 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
       setSuccessMsg(null);
       setIsEditingAddress(false);
 
-      const initialAddress = user.address || (typeof window !== 'undefined' ? localStorage.getItem('user_delivery_address') : '') || '';
+      // Prioritize saved address from user state or localStorage
+      let initialAddress = user.address || '';
+      if (!initialAddress && typeof window !== 'undefined') {
+        initialAddress = localStorage.getItem('user_delivery_address') || '';
+      }
+      if (!initialAddress && typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('tmbill_user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.address) initialAddress = parsed.address;
+          }
+        } catch {}
+      }
+
       setAddressInput(initialAddress);
 
       // Pre-populate with session user immediately so modal opens instantly without glitch
-      setProfile((prev) => prev || {
+      setProfile({
         id: user.id,
         name: user.name,
         email: user.email,
@@ -75,28 +89,18 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
       ApiService.getUserProfile()
         .then((res) => {
           if (res && res.data) {
-            setProfile(res.data);
-            if (res.data.address) {
-              setAddressInput(res.data.address);
+            const finalAddr = res.data.address || initialAddress;
+            setProfile((prev) => (prev ? { ...prev, ...res.data, address: finalAddr } : res.data));
+            if (finalAddr) {
+              setAddressInput(finalAddr);
               if (typeof window !== 'undefined') {
-                localStorage.setItem('user_delivery_address', res.data.address);
+                localStorage.setItem('user_delivery_address', finalAddr);
               }
             }
           }
         })
         .catch(() => {
-          // Graceful fallback to session details without scary technical 404 alert
-          if (user) {
-            setProfile((prev) => prev || {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-              address: initialAddress,
-              created_at: user.created_at || new Date().toISOString(),
-              ordersCount: 0,
-            });
-          }
+          // Graceful fallback to session details without scary technical alert
         })
         .finally(() => {
           setIsLoading(false);
@@ -112,20 +116,32 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    try {
-      const res = await ApiService.updateProfile({ address: trimmed });
-      const updatedAddr = res.data?.address || trimmed;
+    // 1. Immediately update local state & localStorage for instantaneous UX
+    setProfile((prev) => (prev ? { ...prev, address: trimmed } : null));
+    updateUser({ address: trimmed });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_delivery_address', trimmed);
+      try {
+        const stored = localStorage.getItem('tmbill_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          u.address = trimmed;
+          localStorage.setItem('tmbill_user', JSON.stringify(u));
+        }
+      } catch {}
+    }
 
-      setProfile((prev) => (prev ? { ...prev, address: updatedAddr } : null));
-      updateUser({ address: updatedAddr });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user_delivery_address', updatedAddr);
-      }
+    try {
+      // 2. Persist to backend database
+      await ApiService.updateProfile({ address: trimmed });
       setIsEditingAddress(false);
       setSuccessMsg('Delivery address saved to your profile!');
       setTimeout(() => setSuccessMsg(null), 3500);
     } catch (err: unknown) {
-      setErrorMsg((err as Error).message || 'Failed to update address');
+      // Even if network fails, client has it saved
+      setIsEditingAddress(false);
+      setSuccessMsg('Address saved locally!');
+      setTimeout(() => setSuccessMsg(null), 3000);
     } finally {
       setIsSavingAddress(false);
     }
@@ -383,11 +399,35 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
                     value={addressInput}
                     onChange={(e) => setAddressInput(e.target.value)}
                     size="small"
-                    InputProps={{
-                      sx: {
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        backgroundColor: '#F8FAFC',
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '10px',
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: '#FFFFFF',
+                        color: '#0F172A !important',
+                        '& fieldset': {
+                          borderColor: '#CBD5E1',
+                          borderWidth: '1.5px',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#94A3B8',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#FF7A00',
+                          borderWidth: '2px',
+                        },
+                      },
+                      '& .MuiInputBase-input': {
+                        color: '#0F172A !important',
+                        WebkitTextFillColor: '#0F172A !important',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        lineHeight: 1.5,
+                      },
+                      '& .MuiInputBase-input::placeholder': {
+                        color: '#94A3B8 !important',
+                        WebkitTextFillColor: '#94A3B8 !important',
+                        opacity: 1,
                       },
                     }}
                   />
@@ -424,12 +464,12 @@ export function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
                 <Box sx={{ mt: 0.5 }}>
                   {profile?.address || user?.address ? (
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#1E293B', fontWeight: 500, fontSize: '0.85rem', lineHeight: 1.5 }}>
+                      <Typography variant="body2" sx={{ color: '#0F172A', fontWeight: 600, fontSize: '0.88rem', lineHeight: 1.5 }}>
                         {profile?.address || user?.address}
                       </Typography>
                     </Box>
                   ) : (
-                    <Typography variant="body2" sx={{ color: '#94A3B8', fontStyle: 'italic', fontSize: '0.8rem' }}>
+                    <Typography variant="body2" sx={{ color: '#64748B', fontStyle: 'italic', fontSize: '0.82rem' }}>
                       No address saved yet. Save your address here for automatic pre-fill during checkout.
                     </Typography>
                   )}

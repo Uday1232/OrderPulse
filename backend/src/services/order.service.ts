@@ -3,7 +3,7 @@ import { prisma } from '../config/db';
 import { RedisService } from './redis.service';
 import { emitOrderCreated, emitOrderUpdated } from '../socket/socket.server';
 import { CreateOrderInput, GetOrdersQuery } from '../validators/order.schema';
-import { NotFoundError } from '../middlewares/errorHandler';
+import { NotFoundError, BadRequestError } from '../middlewares/errorHandler';
 import { logger } from '../utils/logger';
 
 export interface PaginatedOrdersResponse {
@@ -79,6 +79,9 @@ export class OrderService {
     }
 
     const deliveryAddress = (input.delivery_address || input.address || '').trim();
+    if (!deliveryAddress) {
+      throw new BadRequestError('Delivery address is compulsory to place an order.');
+    }
 
     // 5. Persist order in PostgreSQL
     const order = await prisma.order.create({
@@ -98,19 +101,13 @@ export class OrderService {
       },
     });
 
-    // 6. If user is authenticated and entered a delivery address, auto-save to profile if requested or currently empty
+    // 6. If user is authenticated and entered a delivery address, always sync address to profile
     if (validUserId && deliveryAddress) {
       try {
-        const curUser = await prisma.user.findUnique({
+        await prisma.user.update({
           where: { id: validUserId },
-          select: { address: true },
+          data: { address: deliveryAddress },
         });
-        if (input.save_address || !curUser?.address) {
-          await prisma.user.update({
-            where: { id: validUserId },
-            data: { address: deliveryAddress },
-          });
-        }
       } catch (err) {
         logger.warn(`Could not auto-save user address: ${(err as Error).message}`);
       }

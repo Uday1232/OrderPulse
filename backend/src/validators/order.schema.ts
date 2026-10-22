@@ -20,7 +20,7 @@ export const CreateOrderSchema = z.object({
   store_id: z.string().uuid('store_id must be a valid UUID'),
   user_id: z.string().uuid().optional().nullable(),
   items: z.array(OrderItemSchema).min(1, 'Order must contain at least one item'),
-  delivery_address: z.string().optional(),
+  delivery_address: z.string().min(1, 'Delivery address is compulsory to place an order'),
   address: z.string().optional(),
   save_address: z.boolean().optional(),
   payment_method: z.enum(['CASH', 'CARD', 'UPI']).default('CASH'),

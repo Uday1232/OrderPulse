@@ -90,7 +90,20 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
   useEffect(() => {
     if (open) {
       setAddressError(null);
-      const savedAddress = user?.address || (typeof window !== 'undefined' ? localStorage.getItem('user_delivery_address') : '') || '';
+      let savedAddress = user?.address || '';
+      if (!savedAddress && typeof window !== 'undefined') {
+        savedAddress = localStorage.getItem('user_delivery_address') || '';
+      }
+      if (!savedAddress && typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('tmbill_user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.address) savedAddress = parsed.address;
+          }
+        } catch {}
+      }
+
       if (savedAddress && savedAddress.trim().length > 0) {
         setDeliveryAddress(savedAddress);
         setIsAddressAutoFilled(true);
@@ -125,7 +138,13 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
 
     const trimmedAddress = deliveryAddress.trim();
     if (!trimmedAddress) {
-      setAddressError('Delivery address is required to place your order. Please enter your delivery address.');
+      setAddressError('Delivery address is COMPULSORY to place an order. Please enter your address.');
+      setErrorMessage('Delivery address is compulsory. Please enter your address above.');
+      const el = document.getElementById('checkout-delivery-address-input');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
       return;
     }
     setAddressError(null);
@@ -559,8 +578,8 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                   <LocationOnIcon sx={{ color: '#FF7A00', fontSize: 18 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
-                    Delivery Address <span style={{ color: '#EF4444' }}>*</span>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '0.92rem' }}>
+                    Delivery Address <span style={{ color: '#EF4444', fontWeight: 900 }}>* (Compulsory)</span>
                   </Typography>
                 </Box>
                 {isAddressAutoFilled && deliveryAddress && (
@@ -581,6 +600,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               </Box>
 
               <TextField
+                id="checkout-delivery-address-input"
                 multiline
                 rows={2}
                 fullWidth
@@ -592,14 +612,41 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                 }}
                 error={Boolean(addressError)}
                 helperText={addressError}
-                InputProps={{
-                  sx: {
-                    borderRadius: '12px',
-                    backgroundColor: '#F8FAFC',
-                    fontSize: '0.85rem',
-                    '&.Mui-focused': {
-                      backgroundColor: '#FFFFFF',
+                sx={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#FFFFFF',
+                    color: '#0F172A !important',
+                    '& fieldset': {
+                      borderColor: Boolean(addressError) ? '#EF4444' : '#CBD5E1',
+                      borderWidth: Boolean(addressError) ? '2px' : '1.5px',
                     },
+                    '&:hover fieldset': {
+                      borderColor: Boolean(addressError) ? '#DC2626' : '#94A3B8',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: Boolean(addressError) ? '#EF4444' : '#FF7A00',
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#0F172A !important',
+                    WebkitTextFillColor: '#0F172A !important',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: '#94A3B8 !important',
+                    WebkitTextFillColor: '#94A3B8 !important',
+                    opacity: 1,
+                  },
+                  '& .MuiFormHelperText-root': {
+                    color: '#EF4444 !important',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    mt: 0.8,
                   },
                 }}
               />
@@ -620,7 +667,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                       />
                     }
                     label={
-                      <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: '#475569', fontWeight: 600 }}>
                         Save this address to my profile for future orders
                       </Typography>
                     }
@@ -639,11 +686,28 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                 size="small"
                 fullWidth
                 placeholder="e.g. Table 4 or Takeaway"
-                InputProps={{
-                  sx: {
-                    borderRadius: '10px',
-                    backgroundColor: '#F8FAFC',
+                sx={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '10px',
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#FFFFFF',
+                    color: '#0F172A !important',
+                    '& fieldset': { borderColor: '#CBD5E1' },
+                    '&:hover fieldset': { borderColor: '#94A3B8' },
+                    '&.Mui-focused fieldset': { borderColor: '#FF7A00' },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#0F172A !important',
+                    WebkitTextFillColor: '#0F172A !important',
                     fontSize: '0.85rem',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748B',
+                    '&.Mui-focused': { color: '#FF7A00' },
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: '#94A3B8 !important',
+                    WebkitTextFillColor: '#94A3B8 !important',
                   },
                 }}
               />
@@ -904,7 +968,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               disabled={items.length === 0 || isSubmitting}
               variant="contained"
               sx={{
-                backgroundColor: '#FF7A00',
+                backgroundColor: !deliveryAddress.trim() ? '#EA580C' : '#FF7A00',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: '0.95rem',
@@ -915,7 +979,13 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                 '&:hover': { backgroundColor: '#E06500' },
               }}
             >
-              {isSubmitting ? <CircularProgress size={22} color="inherit" /> : `Confirm & Pay ₹${grandTotal.toFixed(2)}`}
+              {isSubmitting ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : !deliveryAddress.trim() ? (
+                `Enter Address to Pay ₹${grandTotal.toFixed(2)}`
+              ) : (
+                `Confirm & Pay ₹${grandTotal.toFixed(2)}`
+              )}
             </Button>
           )}
         </DialogActions>
