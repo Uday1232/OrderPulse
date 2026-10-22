@@ -7,6 +7,8 @@ describe('Auth & Store Endpoints', () => {
   let adminToken: string;
   let userToken: string;
   let createdStoreId: string;
+  let testAdminEmail = `admin-test-${Date.now()}@test.com`;
+  let testUserEmail = `user-test-${Date.now()}@test.com`;
 
   beforeAll(async () => {
     try {
@@ -16,6 +18,21 @@ describe('Auth & Store Endpoints', () => {
   });
 
   afterAll(async () => {
+    try {
+      if (createdStoreId) {
+        await prisma.orderArchive.deleteMany({ where: { store_id: createdStoreId } });
+        await prisma.order.deleteMany({ where: { store_id: createdStoreId } });
+        await prisma.item.deleteMany({ where: { category: { store_id: createdStoreId } } });
+        await prisma.category.deleteMany({ where: { store_id: createdStoreId } });
+        await prisma.store.deleteMany({ where: { id: createdStoreId } });
+      }
+      await prisma.store.deleteMany({
+        where: { name: { contains: 'Seaside Pavilion' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: { in: [testAdminEmail, testUserEmail] } },
+      });
+    } catch (_) {}
     await prisma.$disconnect();
     try {
       redis.disconnect();
@@ -23,8 +40,6 @@ describe('Auth & Store Endpoints', () => {
   });
 
   describe('Authentication & RBAC', () => {
-    const testAdminEmail = `admin-test-${Date.now()}@test.com`;
-    const testUserEmail = `user-test-${Date.now()}@test.com`;
 
     it('should register a regular USER even if requesting ADMIN (public registration strictly enforces USER)', async () => {
       const res = await request(app)
