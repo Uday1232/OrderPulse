@@ -1,1 +1,5 @@
-export { default } from '../create-account/page';
+import { redirect } from 'next/navigation';
+
+export default function RegisterRedirect() {
+  redirect('/login?mode=register');
+}

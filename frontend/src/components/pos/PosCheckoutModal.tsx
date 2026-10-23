@@ -461,7 +461,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                       </Button>
                       <Button
                         component={Link}
-                        href="/create-account"
+                        href="/login?mode=register"
                         variant="outlined"
                         size="small"
                         sx={{
@@ -946,7 +946,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               </Button>
               <Button
                 component={Link}
-                href="/create-account"
+                href="/login?mode=register"
                 variant="outlined"
                 sx={{
                   borderColor: '#CBD5E1',

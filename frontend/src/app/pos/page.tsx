@@ -324,7 +324,7 @@ export default function PosPage() {
                 </Button>
                 <Button
                   component={Link}
-                  href="/create-account"
+                  href="/login?mode=register"
                   variant="outlined"
                   size="small"
                   sx={{

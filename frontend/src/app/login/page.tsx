@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Box,
@@ -25,12 +25,31 @@ import { useSnackbar } from 'notistack';
 
 import { useAuth } from '../../hooks/useAuth';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, register, isAuthenticated } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
-  const [isRegistering, setIsRegistering] = useState(false);
+  const mode = searchParams.get('mode');
+  const [isRegistering, setIsRegistering] = useState(
+    mode === 'register' || mode === 'create-account' || mode === 'signup'
+  );
+
+  useEffect(() => {
+    const currentMode = searchParams.get('mode');
+    if (currentMode === 'register' || currentMode === 'create-account' || currentMode === 'signup') {
+      setIsRegistering(true);
+    } else if (currentMode === 'login' || currentMode === 'signin') {
+      setIsRegistering(false);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/pos');
+    }
+  }, [isAuthenticated, router]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -422,6 +441,20 @@ export default function LoginPage() {
         </Box>
       </Box>
     </Box>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
+          <CircularProgress sx={{ color: '#FF7A00' }} />
+        </Box>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
 
