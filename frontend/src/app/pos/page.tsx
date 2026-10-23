@@ -324,7 +324,7 @@ export default function PosPage() {
                 </Button>
                 <Button
                   component={Link}
-                  href="/register"
+                  href="/create-account"
                   variant="outlined"
                   size="small"
                   sx={{
@@ -339,7 +339,7 @@ export default function PosPage() {
                     '&:hover': { backgroundColor: '#FEF3C7' },
                   }}
                 >
-                  Sign Up
+                  Create New Account
                 </Button>
               </Box>
             </Box>

@@ -461,7 +461,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                       </Button>
                       <Button
                         component={Link}
-                        href="/register"
+                        href="/create-account"
                         variant="outlined"
                         size="small"
                         sx={{
@@ -476,7 +476,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                           '&:hover': { backgroundColor: '#FEF3C7', borderColor: '#B45309' },
                         }}
                       >
-                        Create Account (Sign Up)
+                        Create New Account
                       </Button>
                     </Stack>
                   </Box>
@@ -946,7 +946,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               </Button>
               <Button
                 component={Link}
-                href="/register"
+                href="/create-account"
                 variant="outlined"
                 sx={{
                   borderColor: '#CBD5E1',
@@ -956,10 +956,11 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
                   borderRadius: '12px',
                   px: 2.5,
                   py: 1.1,
+                  textTransform: 'none',
                   '&:hover': { backgroundColor: '#F8FAFC', borderColor: '#94A3B8' },
                 }}
               >
-                Sign Up
+                Create New Account
               </Button>
             </Stack>
           ) : (

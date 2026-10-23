@@ -246,7 +246,7 @@ export default function LoginPage() {
                 '&:hover': { backgroundColor: isRegistering ? '#FFFFFF' : '#E2E8F0' },
               }}
             >
-              New User Register
+              Create New Account
             </Button>
           </Box>
 
@@ -413,7 +413,7 @@ export default function LoginPage() {
               {isLoading ? (
                 <CircularProgress size={22} color="inherit" />
               ) : isRegistering ? (
-                'Create Customer Account'
+                'Create New Account'
               ) : (
                 'Sign In'
               )}
