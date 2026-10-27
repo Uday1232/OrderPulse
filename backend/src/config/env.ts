@@ -12,6 +12,12 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   JWT_SECRET: z.string().default('storepulse-super-secret-jwt-key-2026'),
   JWT_EXPIRES_IN: z.string().default('7d'),
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('OrderPulse <no-reply@orderpulse.app>'),
 });
 
 const parsed = envSchema.safeParse(process.env);

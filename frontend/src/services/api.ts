@@ -68,6 +68,43 @@ export class ApiService {
     return res.json();
   }
 
+  static async forgotPassword(email: string): Promise<{
+    success: boolean;
+    message: string;
+    devResetUrl?: string;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || data.message || `Request failed: HTTP ${res.status}`);
+    }
+
+    return data;
+  }
+
+  static async resetPassword(payload: {
+    token: string;
+    new_password: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || data.message || `Password reset failed: HTTP ${res.status}`);
+    }
+
+    return data;
+  }
+
   static async getMe(): Promise<{ success: boolean; data: { user: User } }> {
     const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
       method: 'GET',

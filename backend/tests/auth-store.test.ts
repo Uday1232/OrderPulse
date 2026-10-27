@@ -167,6 +167,83 @@ describe('Auth & Store Endpoints', () => {
 
       expect(res.body.success).toBe(false);
     });
+
+    it('should return 200 for forgot-password request on non-existent email (anti-enumeration)', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: 'ghost-user-nonexistent@example.com' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('If an account exists');
+    });
+
+    it('should dispatch password reset and allow user to reset password successfully', async () => {
+      // 1. Request forgot-password for the registered user
+      const forgotRes = await request(app)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: testUserEmail })
+        .expect(200);
+
+      expect(forgotRes.body.success).toBe(true);
+      expect(forgotRes.body.devResetUrl).toBeDefined();
+
+      const resetUrl = forgotRes.body.devResetUrl as string;
+      const urlObj = new URL(resetUrl);
+      const token = urlObj.searchParams.get('token');
+      expect(token).toBeDefined();
+
+      // 2. Reject reset with invalid/tampered token
+      await request(app)
+        .post('/api/v1/auth/reset-password')
+        .send({
+          token: 'invalid_tampered_token_that_does_not_exist_in_redis_123',
+          new_password: 'newSecretPassword123',
+        })
+        .expect(400);
+
+      // 3. Complete reset with valid token
+      const resetRes = await request(app)
+        .post('/api/v1/auth/reset-password')
+        .send({
+          token,
+          new_password: 'newSecretPassword123',
+        })
+        .expect(200);
+
+      expect(resetRes.body.success).toBe(true);
+      expect(resetRes.body.message).toContain('successfully reset');
+
+      // 4. Token must be burned (one-time use): second attempt must fail
+      await request(app)
+        .post('/api/v1/auth/reset-password')
+        .send({
+          token,
+          new_password: 'anotherPassword123',
+        })
+        .expect(400);
+
+      // 5. Old password no longer works
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: testUserEmail,
+          password: 'password123',
+        })
+        .expect(401);
+
+      // 6. New password works successfully
+      const newLoginRes = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: testUserEmail,
+          password: 'newSecretPassword123',
+        })
+        .expect(200);
+
+      expect(newLoginRes.body.success).toBe(true);
+      expect(newLoginRes.body.data.token).toBeDefined();
+    });
   });
 
   describe('Stores & Dynamic Menus', () => {

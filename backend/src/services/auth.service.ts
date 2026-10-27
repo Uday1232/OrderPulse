@@ -1,10 +1,13 @@
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, Role } from '@prisma/client';
 import { prisma } from '../config/db';
 import { env } from '../config/env';
-import { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError } from '../middlewares/errorHandler';
+import { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError, BadRequestError } from '../middlewares/errorHandler';
 import { RegisterInput, LoginInput, CreateAdminInput } from '../validators/auth.schema';
+import { RedisService } from './redis.service';
+import { EmailService } from './email.service';
 import { logger } from '../utils/logger';
 
 export interface AuthResponse {
@@ -325,6 +328,118 @@ export class AuthService {
 
     logger.info(`User ${updated.email} role updated to: ${role}`);
     return updated;
+  }
+
+  /**
+   * Request password reset token with anti-enumeration protection and rate limiting
+   */
+  static async forgotPassword(
+    email: string,
+    clientIp?: string
+  ): Promise<{ success: boolean; message: string; devResetUrl?: string }> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Rate limiting check (e.g., max 5 requests per 15 minutes per IP or Email)
+    const rateLimitKey = `pwd_rate:${clientIp || normalizedEmail}`;
+    const attempts = await RedisService.get<number>(rateLimitKey);
+    if (attempts && attempts >= 5) {
+      throw new BadRequestError('Too many password reset requests. Please wait 15 minutes before trying again.');
+    }
+    await RedisService.set(rateLimitKey, (attempts || 0) + 1, 900);
+
+    // 2. Lookup user in PostgreSQL
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    let devResetUrl: string | undefined;
+
+    // 3. If user exists, generate cryptographically secure token & hash it
+    if (user) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+      // Store in Redis with 15-minute TTL (900 seconds)
+      const tokenKey = `pwd_reset:${hashedToken}`;
+      await RedisService.set(tokenKey, user.id, 900);
+
+      const frontendBase = env.FRONTEND_URL || 'http://localhost:3000';
+      const resetUrl = `${frontendBase}/reset-password?token=${rawToken}`;
+
+      // Dispatch professional branded email
+      await EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
+
+      // In non-production, expose devResetUrl for frictionless testing
+      if (env.NODE_ENV !== 'production') {
+        devResetUrl = resetUrl;
+      }
+
+      logger.info(`Password reset requested for user: ${user.email} (ID: ${user.id})`);
+    } else {
+      logger.info(`Password reset requested for non-existent email: ${normalizedEmail}`);
+    }
+
+    // 4. Return identical anti-enumeration response
+    return {
+      success: true,
+      message: 'If an account exists with that email address, password reset instructions have been dispatched.',
+      devResetUrl,
+    };
+  }
+
+  /**
+   * Reset user password using the one-time secure token
+   */
+  static async resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> {
+    if (!token || token.length < 32) {
+      throw new BadRequestError('Invalid or missing password reset token.');
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestError('Password must be at least 6 characters.');
+    }
+
+    // 1. Compute SHA-256 hash of provided token
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenKey = `pwd_reset:${hashedToken}`;
+
+    // 2. Fetch userId from Redis
+    const userId = await RedisService.get<string>(tokenKey);
+    if (!userId) {
+      throw new BadRequestError('Password reset link is invalid or has expired. Please request a new link.');
+    }
+
+    // 3. Find user in database
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      await RedisService.del(tokenKey);
+      throw new NotFoundError('User account associated with this reset link no longer exists.');
+    }
+
+    // 4. Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // 5. Update user password in PostgreSQL
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password_hash: passwordHash },
+    });
+
+    // 6. Burn the token immediately (single-use guarantee)
+    await RedisService.del(tokenKey);
+
+    logger.info(`Password successfully reset for user ${user.email} (${user.id})`);
+
+    return {
+      success: true,
+      message: 'Your password has been successfully reset. You may now log in with your new password.',
+    };
   }
 
   private static generateToken(user: User): string {

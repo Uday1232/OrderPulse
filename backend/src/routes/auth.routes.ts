@@ -2,7 +2,14 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { validateRequest } from '../middlewares/validate';
 import { authenticate, authorizeRoles } from '../middlewares/auth';
-import { RegisterSchema, LoginSchema, UpdateUserRoleSchema, CreateAdminSchema } from '../validators/auth.schema';
+import {
+  RegisterSchema,
+  LoginSchema,
+  UpdateUserRoleSchema,
+  CreateAdminSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchema,
+} from '../validators/auth.schema';
 
 const router = Router();
 
@@ -18,6 +25,20 @@ router.post(
   '/login',
   validateRequest({ body: LoginSchema }),
   AuthController.login
+);
+
+// POST /auth/forgot-password - Dispatch password reset email/link with 15m TTL
+router.post(
+  '/forgot-password',
+  validateRequest({ body: ForgotPasswordSchema }),
+  AuthController.forgotPassword
+);
+
+// POST /auth/reset-password - Verify one-time token & set new hashed password
+router.post(
+  '/reset-password',
+  validateRequest({ body: ResetPasswordSchema }),
+  AuthController.resetPassword
 );
 
 // GET /auth/me - Verify current token & return profile

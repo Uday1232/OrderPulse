@@ -99,4 +99,24 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const clientIp = req.ip || req.socket.remoteAddress;
+      const result = await AuthService.forgotPassword(req.body.email, clientIp);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token, new_password } = req.body;
+      const result = await AuthService.resetPassword(token, new_password);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

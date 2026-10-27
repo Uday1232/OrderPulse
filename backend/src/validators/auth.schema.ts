@@ -22,7 +22,18 @@ export const UpdateUserRoleSchema = z.object({
   role: z.enum(['ADMIN', 'USER']),
 });
 
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email('Valid email is required'),
+});
+
+export const ResetPasswordSchema = z.object({
+  token: z.string().min(32, 'Valid reset token is required'),
+  new_password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type CreateAdminInput = z.infer<typeof CreateAdminSchema>;
 export type UpdateUserRoleInput = z.infer<typeof UpdateUserRoleSchema>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;

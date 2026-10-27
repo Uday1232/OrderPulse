@@ -14,6 +14,10 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -21,9 +25,13 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useSnackbar } from 'notistack';
 
 import { useAuth } from '../../hooks/useAuth';
+import { ApiService } from '../../services/api';
 
 function LoginContent() {
   const router = useRouter();
@@ -36,12 +44,22 @@ function LoginContent() {
     mode === 'register' || mode === 'create-account' || mode === 'signup'
   );
 
+  // Forgot password modal state
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(mode === 'forgot' || mode === 'reset');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccessMessage, setForgotSuccessMessage] = useState<string | null>(null);
+  const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
+
   useEffect(() => {
     const currentMode = searchParams.get('mode');
     if (currentMode === 'register' || currentMode === 'create-account' || currentMode === 'signup') {
       setIsRegistering(true);
     } else if (currentMode === 'login' || currentMode === 'signin') {
       setIsRegistering(false);
+    } else if (currentMode === 'forgot' || currentMode === 'reset') {
+      setIsForgotModalOpen(true);
     }
   }, [searchParams]);
 
@@ -126,6 +144,37 @@ function LoginContent() {
       enqueueSnackbar(msg, { variant: 'error', autoHideDuration: 5000 });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!forgotEmail.trim()) {
+      setForgotError('Please enter your email address.');
+      return;
+    }
+
+    setIsForgotLoading(true);
+    setForgotError(null);
+    setForgotSuccessMessage(null);
+    setDevResetUrl(null);
+
+    try {
+      const res = await ApiService.forgotPassword(forgotEmail.trim());
+      setForgotSuccessMessage(res.message);
+      if (res.devResetUrl) {
+        setDevResetUrl(res.devResetUrl);
+      }
+      enqueueSnackbar('Password reset instructions dispatched.', {
+        variant: 'success',
+        autoHideDuration: 4000,
+      });
+    } catch (err: unknown) {
+      const msg = (err as Error).message || 'Failed to dispatch reset instructions.';
+      setForgotError(msg);
+      enqueueSnackbar(msg, { variant: 'error', autoHideDuration: 4000 });
+    } finally {
+      setIsForgotLoading(false);
     }
   };
 
@@ -397,16 +446,26 @@ function LoginContent() {
                 />
                 <Typography
                   variant="body2"
-                  component="a"
-                  href="#forgot"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    enqueueSnackbar('Password reset link has been dispatched to your email.', {
-                      variant: 'info',
-                      autoHideDuration: 4000,
-                    });
+                  component="button"
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(email || '');
+                    setForgotError(null);
+                    setForgotSuccessMessage(null);
+                    setDevResetUrl(null);
+                    setIsForgotModalOpen(true);
                   }}
-                  sx={{ color: '#FF7A00', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                  sx={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    color: '#FF7A00',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
                 >
                   Forgot password?
                 </Typography>
@@ -440,6 +499,188 @@ function LoginContent() {
           </Box>
         </Box>
       </Box>
+
+      {/* Forgot Password Dialog */}
+      <Dialog
+        open={isForgotModalOpen}
+        onClose={() => {
+          if (!isForgotLoading) {
+            setIsForgotModalOpen(false);
+          }
+        }}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 1,
+            boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '12px',
+                backgroundColor: '#FFF7ED',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FF7A00',
+              }}
+            >
+              <LockResetIcon fontSize="medium" />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '1.15rem' }}>
+                Reset Password
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748B' }}>
+                Secure link will be sent to your inbox
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton
+            onClick={() => setIsForgotModalOpen(false)}
+            disabled={isForgotLoading}
+            size="small"
+            sx={{ color: '#94A3B8' }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <Box component="form" onSubmit={handleForgotPasswordSubmit}>
+          <DialogContent sx={{ pt: 1, pb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#475569', mb: 2.5, lineHeight: 1.5 }}>
+              Enter the email address associated with your account. We will send you a one-time link valid for 15 minutes.
+            </Typography>
+
+            {forgotError && (
+              <Alert severity="error" sx={{ mb: 2, borderRadius: '10px' }}>
+                {forgotError}
+              </Alert>
+            )}
+
+            {forgotSuccessMessage && (
+              <Box sx={{ mb: 2 }}>
+                <Alert
+                  icon={<CheckCircleOutlineIcon fontSize="inherit" />}
+                  severity="success"
+                  sx={{ borderRadius: '10px', mb: devResetUrl ? 1.5 : 0 }}
+                >
+                  {forgotSuccessMessage}
+                </Alert>
+
+                {devResetUrl && (
+                  <Box sx={{ p: 2, backgroundColor: '#FFFBEB', borderRadius: '12px', border: '1px dashed #F59E0B' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#B45309', display: 'block', mb: 1 }}>
+                      Developer Quick-Access:
+                    </Typography>
+                    <Button
+                      component={Link}
+                      href={devResetUrl}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      sx={{
+                        textTransform: 'none',
+                        color: '#B45309',
+                        borderColor: '#F59E0B',
+                        fontSize: '0.8rem',
+                        '&:hover': { backgroundColor: '#FEF3C7', borderColor: '#D97706' },
+                      }}
+                    >
+                      Open Reset Password Page
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {!forgotSuccessMessage && (
+              <TextField
+                fullWidth
+                type="email"
+                label="Registered Email"
+                placeholder="you@example.com"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                disabled={isForgotLoading}
+                autoFocus
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlinedIcon sx={{ color: '#94A3B8' }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    '&.Mui-focused fieldset': { borderColor: '#FF7A00' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#FF7A00' },
+                }}
+              />
+            )}
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+            <Button
+              onClick={() => setIsForgotModalOpen(false)}
+              disabled={isForgotLoading}
+              variant="text"
+              sx={{ color: '#64748B', borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+            >
+              {forgotSuccessMessage ? 'Close' : 'Cancel'}
+            </Button>
+
+            {!forgotSuccessMessage ? (
+              <Button
+                type="submit"
+                disabled={isForgotLoading || !forgotEmail.trim()}
+                variant="contained"
+                sx={{
+                  backgroundColor: '#FF7A00',
+                  color: '#FFFFFF',
+                  borderRadius: '10px',
+                  px: 3,
+                  py: 1,
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  '&:hover': { backgroundColor: '#E06500' },
+                  boxShadow: '0 4px 12px rgba(255, 122, 0, 0.3)',
+                }}
+              >
+                {isForgotLoading ? <CircularProgress size={20} color="inherit" /> : 'Send Reset Link'}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setForgotSuccessMessage(null);
+                  setDevResetUrl(null);
+                  setForgotEmail('');
+                }}
+                variant="outlined"
+                sx={{
+                  borderColor: '#E2E8F0',
+                  color: '#475569',
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Send Another
+              </Button>
+            )}
+          </DialogActions>
+        </Box>
+      </Dialog>
     </Box>
   );
 }
