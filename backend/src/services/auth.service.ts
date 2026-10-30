@@ -335,7 +335,8 @@ export class AuthService {
    */
   static async forgotPassword(
     email: string,
-    clientIp?: string
+    clientIp?: string,
+    clientOrigin?: string
   ): Promise<{ success: boolean; message: string; devResetUrl?: string }> {
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -363,14 +364,29 @@ export class AuthService {
       const tokenKey = `pwd_reset:${hashedToken}`;
       await RedisService.set(tokenKey, user.id, 900);
 
-      const frontendBase = env.FRONTEND_URL || 'http://localhost:3000';
+      // Dynamically resolve frontend base URL
+      let frontendBase = env.FRONTEND_URL;
+      if (clientOrigin && clientOrigin.startsWith('http')) {
+        try {
+          const parsed = new URL(clientOrigin);
+          frontendBase = parsed.origin;
+        } catch (_) {}
+      }
+      if (!frontendBase || frontendBase === 'http://localhost:3000') {
+        if (env.NODE_ENV === 'production') {
+          frontendBase = 'https://orderpulse-frontend-three.vercel.app';
+        } else {
+          frontendBase = 'http://localhost:3000';
+        }
+      }
+
       const resetUrl = `${frontendBase}/reset-password?token=${rawToken}`;
 
       // Dispatch professional branded email
       await EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
 
-      // In non-production, expose devResetUrl for frictionless testing
-      if (env.NODE_ENV !== 'production') {
+      // If SMTP is not configured or in dev/sandbox, expose direct test link
+      if (!EmailService.hasSmtpConfigured() || env.NODE_ENV !== 'production') {
         devResetUrl = resetUrl;
       }
 
@@ -379,10 +395,13 @@ export class AuthService {
       logger.info(`Password reset requested for non-existent email: ${normalizedEmail}`);
     }
 
-    // 4. Return identical anti-enumeration response
+    // 4. Return message with helpful context
+    const hasSmtp = EmailService.hasSmtpConfigured();
     return {
       success: true,
-      message: 'If an account exists with that email address, password reset instructions have been dispatched.',
+      message: hasSmtp
+        ? 'If an account exists with that email address, password reset instructions have been dispatched.'
+        : 'If an account exists with that email address, password reset instructions have been dispatched. (SMTP not configured on server; direct access link provided below for testing).',
       devResetUrl,
     };
   }

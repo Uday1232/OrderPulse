@@ -103,7 +103,8 @@ export class AuthController {
   static async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientIp = req.ip || req.socket.remoteAddress;
-      const result = await AuthService.forgotPassword(req.body.email, clientIp);
+      const origin = req.get('origin') || req.get('referer');
+      const result = await AuthService.forgotPassword(req.body.email, clientIp, origin);
       res.status(200).json(result);
     } catch (error) {
       next(error);

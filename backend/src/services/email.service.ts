@@ -36,6 +36,13 @@ export class EmailService {
   }
 
   /**
+   * Check if outgoing SMTP server is actively configured
+   */
+  static hasSmtpConfigured(): boolean {
+    return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+  }
+
+  /**
    * Dispatch a generic email, falling back cleanly to logger in dev/test environments
    */
   static async sendEmail(options: SendEmailOptions): Promise<{ delivered: boolean; devPreview?: string }> {
