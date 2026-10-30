@@ -46,6 +46,13 @@ export class EmailService {
     return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
   }
 
+  public static lastDelivery: {
+    timestamp: string;
+    to: string;
+    delivered: boolean;
+    error?: string;
+  } | null = null;
+
   /**
    * Dispatch a generic email, falling back cleanly to logger in dev/test environments
    */
@@ -67,15 +74,36 @@ export class EmailService {
           subject: options.subject,
         });
 
+        this.lastDelivery = {
+          timestamp: new Date().toISOString(),
+          to: options.to,
+          delivered: true,
+        };
+
         return { delivered: true };
       } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
         logger.error(`Failed to dispatch email to ${options.to}:`, {
-          error: error instanceof Error ? error.message : String(error),
+          error: errMsg,
         });
-        // Still don't crash the application
+
+        this.lastDelivery = {
+          timestamp: new Date().toISOString(),
+          to: options.to,
+          delivered: false,
+          error: errMsg,
+        };
+
         return { delivered: false };
       }
     }
+
+    this.lastDelivery = {
+      timestamp: new Date().toISOString(),
+      to: options.to,
+      delivered: false,
+      error: 'SMTP not configured on this server (env.SMTP_HOST / USER / PASS missing)',
+    };
 
     // Dev/Sandbox fallback: log to console with clear formatting
     logger.info('================================================================');

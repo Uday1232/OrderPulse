@@ -24,6 +24,7 @@ router.get('/health', (_req: Request, res: Response) => {
       port: env.SMTP_PORT || null,
       user: env.SMTP_USER ? env.SMTP_USER.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
       hasPass: Boolean(env.SMTP_PASS),
+      lastDelivery: EmailService.lastDelivery,
     },
   });
 });
