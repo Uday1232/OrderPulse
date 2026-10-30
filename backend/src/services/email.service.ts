@@ -19,14 +19,18 @@ export class EmailService {
     if (this.transporter) return this.transporter;
 
     if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+      const isGmail = env.SMTP_HOST.includes('gmail');
       this.transporter = nodemailer.createTransport({
         host: env.SMTP_HOST,
-        port: env.SMTP_PORT || 587,
-        secure: env.SMTP_PORT === 465,
+        port: env.SMTP_PORT || (isGmail ? 465 : 587),
+        secure: env.SMTP_PORT === 465 || (isGmail && env.SMTP_PORT !== 587),
         auth: {
           user: env.SMTP_USER,
           pass: env.SMTP_PASS,
         },
+        connectionTimeout: 7000,
+        greetingTimeout: 7000,
+        socketTimeout: 10000,
       });
       logger.info(`SMTP Transporter initialized for host: ${env.SMTP_HOST}`);
       return this.transporter;

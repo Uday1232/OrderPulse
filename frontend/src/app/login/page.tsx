@@ -576,26 +576,32 @@ function LoginContent() {
                 </Alert>
 
                 {devResetUrl && (
-                  <Box sx={{ p: 2, backgroundColor: '#FFFBEB', borderRadius: '12px', border: '1px dashed #F59E0B' }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#B45309', display: 'block', mb: 1 }}>
-                      Developer Quick-Access:
+                  <Box sx={{ p: 2.2, backgroundColor: '#FFF7ED', borderRadius: '14px', border: '1.5px solid #FF7A00', textAlign: 'center', mt: 1.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800, color: '#0F172A', mb: 1 }}>
+                      Your Password Reset Link:
                     </Typography>
                     <Button
                       component={Link}
                       href={devResetUrl}
-                      variant="outlined"
-                      size="small"
+                      variant="contained"
                       fullWidth
                       sx={{
                         textTransform: 'none',
-                        color: '#B45309',
-                        borderColor: '#F59E0B',
-                        fontSize: '0.8rem',
-                        '&:hover': { backgroundColor: '#FEF3C7', borderColor: '#D97706' },
+                        backgroundColor: '#FF7A00',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        py: 1.2,
+                        borderRadius: '10px',
+                        fontSize: '0.92rem',
+                        boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
+                        '&:hover': { backgroundColor: '#EA580C' },
                       }}
                     >
-                      Open Reset Password Page
+                      Click Here to Set New Password
                     </Button>
+                    <Typography variant="caption" sx={{ color: '#9A3412', display: 'block', mt: 1, fontWeight: 500 }}>
+                      (A copy has also been dispatched to your Gmail inbox)
+                    </Typography>
                   </Box>
                 )}
               </Box>

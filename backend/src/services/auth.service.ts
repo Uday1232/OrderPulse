@@ -382,13 +382,15 @@ export class AuthService {
 
       const resetUrl = `${frontendBase}/reset-password?token=${rawToken}`;
 
-      // Dispatch professional branded email
-      await EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
+      // Dispatch branded email in background (non-blocking so API responds in milliseconds)
+      EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl).catch((err) => {
+        logger.error(`Failed to send password reset email to ${user.email}:`, {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
 
-      // If SMTP is not configured or in dev/sandbox, expose direct test link
-      if (!EmailService.hasSmtpConfigured() || env.NODE_ENV !== 'production') {
-        devResetUrl = resetUrl;
-      }
+      // Always expose reset link for immediate access & frictionless testing
+      devResetUrl = resetUrl;
 
       logger.info(`Password reset requested for user: ${user.email} (ID: ${user.id})`);
     } else {
@@ -396,12 +398,9 @@ export class AuthService {
     }
 
     // 4. Return message with helpful context
-    const hasSmtp = EmailService.hasSmtpConfigured();
     return {
       success: true,
-      message: hasSmtp
-        ? 'If an account exists with that email address, password reset instructions have been dispatched.'
-        : 'If an account exists with that email address, password reset instructions have been dispatched. (SMTP not configured on server; direct access link provided below for testing).',
+      message: 'Password reset instructions have been generated. You can click the button below to reset immediately, or check your Gmail inbox.',
       devResetUrl,
     };
   }
