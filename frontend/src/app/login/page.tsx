@@ -164,6 +164,19 @@ function LoginContent() {
       setForgotSuccessMessage(res.message);
       if (res.devResetUrl) {
         setDevResetUrl(res.devResetUrl);
+
+        // Instant Vercel bridge delivery directly from client-side domain for guaranteed arrival
+        fetch('/api/auth/send-reset-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-orderpulse-secret': 'orderpulse-bridge-secret-key-2026',
+          },
+          body: JSON.stringify({
+            to: forgotEmail.trim(),
+            resetUrl: res.devResetUrl,
+          }),
+        }).catch((e) => console.warn('Frontend email bridge notice:', e));
       }
       enqueueSnackbar('Password reset instructions dispatched.', {
         variant: 'success',

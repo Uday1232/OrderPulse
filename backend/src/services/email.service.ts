@@ -70,7 +70,7 @@ export class EmailService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-orderpulse-secret': env.JWT_SECRET || 'storepulse-super-secret-jwt-key-2026',
+          'x-orderpulse-secret': 'orderpulse-bridge-secret-key-2026',
         },
         body: JSON.stringify({
           to: options.to,
@@ -91,9 +91,13 @@ export class EmailService {
         return { delivered: true };
       }
 
-      return { delivered: false, error: (data as any)?.error || `HTTP ${response.status} from Vercel Bridge` };
+      const errDetail = (data as any)?.error || `HTTP ${response.status} from Vercel Bridge`;
+      logger.error(`Vercel Bridge responded with error: ${errDetail}`);
+      return { delivered: false, error: errDetail };
     } catch (err: any) {
-      return { delivered: false, error: err?.message || String(err) };
+      const errMsg = err?.message || String(err);
+      logger.error(`Failed to reach Vercel Bridge (${bridgeUrl}): ${errMsg}`);
+      return { delivered: false, error: errMsg };
     }
   }
 
@@ -101,20 +105,24 @@ export class EmailService {
    * Dispatch a generic email, falling back cleanly to logger in dev/test environments
    */
   static async sendEmail(options: SendEmailOptions): Promise<{ delivered: boolean; devPreview?: string }> {
-    // 1. If deployed to production or FRONTEND_URL points to Vercel, try Vercel HTTPS Bridge first
+    // 1. If deployed to production or FRONTEND_URL points to Vercel, use Vercel HTTPS Bridge
     // This cleanly bypasses Render's free tier egress firewall that silently drops raw SMTP packets!
     if (env.FRONTEND_URL && env.FRONTEND_URL.includes('vercel.app')) {
       const bridgeResult = await this.sendViaVercelBridge(options);
+      this.lastDelivery = {
+        timestamp: new Date().toISOString(),
+        to: options.to,
+        delivered: bridgeResult.delivered,
+        method: 'vercel-https-bridge',
+        error: bridgeResult.delivered ? undefined : bridgeResult.error,
+      };
+
       if (bridgeResult.delivered) {
-        this.lastDelivery = {
-          timestamp: new Date().toISOString(),
-          to: options.to,
-          delivered: true,
-          method: 'vercel-https-bridge',
-        };
         return { delivered: true };
       }
-      logger.warn(`Vercel bridge returned error: ${bridgeResult.error}. Falling back to direct SMTP transporter...`);
+
+      logger.warn(`Vercel bridge delivery failed: ${bridgeResult.error}. Direct SMTP is blocked on Render free tier.`);
+      return { delivered: false, devPreview: bridgeResult.error };
     }
 
     const transporter = this.getTransporter();

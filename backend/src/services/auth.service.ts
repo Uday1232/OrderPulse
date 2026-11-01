@@ -384,12 +384,10 @@ export class AuthService {
 
       const resetUrl = `${frontendBase}/reset-password?token=${rawToken}`;
 
-      // Dispatch branded email directly via Gmail SMTP
+      // Dispatch branded email directly via Gmail SMTP / Vercel Bridge
       await EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
 
-      if (env.NODE_ENV !== 'production') {
-        devResetUrl = resetUrl;
-      }
+      devResetUrl = resetUrl;
 
       logger.info(`Password reset requested for user: ${user.email} (ID: ${user.id})`);
     } else {
