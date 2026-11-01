@@ -170,7 +170,7 @@ function LoginContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-orderpulse-secret': 'orderpulse-bridge-secret-key-2026',
+            'x-orderpulse-secret': 'storepulse-super-secret-jwt-key-2026',
           },
           body: JSON.stringify({
             to: forgotEmail.trim(),
