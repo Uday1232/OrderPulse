@@ -566,44 +566,33 @@ function LoginContent() {
             )}
 
             {forgotSuccessMessage && (
-              <Box sx={{ mb: 2 }}>
-                <Alert
-                  icon={<CheckCircleOutlineIcon fontSize="inherit" />}
-                  severity="success"
-                  sx={{ borderRadius: '10px', mb: devResetUrl ? 1.5 : 0 }}
+              <Box sx={{ mb: 2, textAlign: 'center', py: 1 }}>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    backgroundColor: '#ECFDF5',
+                    color: '#10B981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px',
+                  }}
                 >
-                  {forgotSuccessMessage}
+                  <EmailOutlinedIcon sx={{ fontSize: 32 }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', mb: 1 }}>
+                  Reset Link Dispatched!
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#475569', mb: 2, lineHeight: 1.6 }}>
+                  We have sent an email with your secure password reset link to:
+                  <br />
+                  <strong style={{ color: '#0F172A' }}>{forgotEmail}</strong>
+                </Typography>
+                <Alert severity="info" sx={{ borderRadius: '12px', textAlign: 'left' }}>
+                  Please open your <strong>Gmail inbox (or Spam folder)</strong> and click the <strong>Reset Password</strong> button inside the email to set your new password.
                 </Alert>
-
-                {devResetUrl && (
-                  <Box sx={{ p: 2.2, backgroundColor: '#FFF7ED', borderRadius: '14px', border: '1.5px solid #FF7A00', textAlign: 'center', mt: 1.5 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 800, color: '#0F172A', mb: 1 }}>
-                      Your Password Reset Link:
-                    </Typography>
-                    <Button
-                      component={Link}
-                      href={devResetUrl}
-                      variant="contained"
-                      fullWidth
-                      sx={{
-                        textTransform: 'none',
-                        backgroundColor: '#FF7A00',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        py: 1.2,
-                        borderRadius: '10px',
-                        fontSize: '0.92rem',
-                        boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
-                        '&:hover': { backgroundColor: '#EA580C' },
-                      }}
-                    >
-                      Click Here to Set New Password
-                    </Button>
-                    <Typography variant="caption" sx={{ color: '#9A3412', display: 'block', mt: 1, fontWeight: 500 }}>
-                      (A copy has also been dispatched to your Gmail inbox)
-                    </Typography>
-                  </Box>
-                )}
               </Box>
             )}
 

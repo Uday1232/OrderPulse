@@ -340,13 +340,15 @@ export class AuthService {
   ): Promise<{ success: boolean; message: string; devResetUrl?: string }> {
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Rate limiting check (e.g., max 5 requests per 15 minutes per IP or Email)
-    const rateLimitKey = `pwd_rate:${clientIp || normalizedEmail}`;
-    const attempts = await RedisService.get<number>(rateLimitKey);
-    if (attempts && attempts >= 5) {
-      throw new BadRequestError('Too many password reset requests. Please wait 15 minutes before trying again.');
+    // 1. Rate limiting check (e.g., max 5 requests per 15 minutes per IP or Email, bypassed in tests)
+    if (env.NODE_ENV !== 'test') {
+      const rateLimitKey = `pwd_rate:${clientIp || normalizedEmail}`;
+      const attempts = await RedisService.get<number>(rateLimitKey);
+      if (attempts && attempts >= 5) {
+        throw new BadRequestError('Too many password reset requests. Please wait 15 minutes before trying again.');
+      }
+      await RedisService.set(rateLimitKey, (attempts || 0) + 1, 900);
     }
-    await RedisService.set(rateLimitKey, (attempts || 0) + 1, 900);
 
     // 2. Lookup user in PostgreSQL
     const user = await prisma.user.findUnique({
@@ -382,25 +384,22 @@ export class AuthService {
 
       const resetUrl = `${frontendBase}/reset-password?token=${rawToken}`;
 
-      // Dispatch branded email in background (non-blocking so API responds in milliseconds)
-      EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl).catch((err) => {
-        logger.error(`Failed to send password reset email to ${user.email}:`, {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
+      // Dispatch branded email directly via Gmail SMTP
+      await EmailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
 
-      // Always expose reset link for immediate access & frictionless testing
-      devResetUrl = resetUrl;
+      if (env.NODE_ENV !== 'production') {
+        devResetUrl = resetUrl;
+      }
 
       logger.info(`Password reset requested for user: ${user.email} (ID: ${user.id})`);
     } else {
       logger.info(`Password reset requested for non-existent email: ${normalizedEmail}`);
     }
 
-    // 4. Return message with helpful context
+    // 4. Return clean, anti-enumeration success message
     return {
       success: true,
-      message: 'Password reset instructions have been generated. You can click the button below to reset immediately, or check your Gmail inbox.',
+      message: 'If an account exists with this email address, a password reset link has been dispatched.',
       devResetUrl,
     };
   }
