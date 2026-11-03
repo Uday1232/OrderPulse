@@ -36,6 +36,7 @@ interface PosHeaderProps {
   onStoreChange: (storeId: string) => void;
   onOpenCheckout: () => void;
   onShowDeals: () => void;
+  onToggleFilterDrawer?: () => void;
 }
 
 export function PosHeader({
@@ -45,6 +46,7 @@ export function PosHeader({
   onStoreChange,
   onOpenCheckout,
   onShowDeals,
+  onToggleFilterDrawer,
 }: PosHeaderProps) {
   const totalCartCount = useCartStore((s) => s.getTotalCount());
   const totalCartAmount = useCartStore((s) => s.getTotalAmount());
@@ -81,9 +83,21 @@ export function PosHeader({
             ),
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton size="small" sx={{ color: '#94A3B8' }}>
-                  <TuneIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                <Tooltip title="Filters & Categories">
+                  <IconButton
+                    size="small"
+                    onClick={onToggleFilterDrawer}
+                    sx={{
+                      color: '#FF7A00',
+                      backgroundColor: 'rgba(255, 122, 0, 0.08)',
+                      borderRadius: '8px',
+                      p: 0.6,
+                      '&:hover': { backgroundColor: 'rgba(255, 122, 0, 0.16)' },
+                    }}
+                  >
+                    <TuneIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
               </InputAdornment>
             ),
             sx: {

@@ -18,6 +18,7 @@ import {
   FormControlLabel,
   Switch,
   Collapse,
+  Drawer,
 } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import LunchDiningIcon from '@mui/icons-material/LunchDining';
@@ -39,6 +40,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import TuneIcon from '@mui/icons-material/Tune';
 import PersonIcon from '@mui/icons-material/Person';
+import CloseIcon from '@mui/icons-material/Close';
 
 import { useAuth } from '../../hooks/useAuth';
 import { useStores } from '../../hooks/useStores';
@@ -55,6 +57,8 @@ interface PosSidebarProps {
   onToggleInStockOnly?: (value: boolean) => void;
   onResetFilters?: () => void;
   onOpenDeals?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const CATEGORY_ITEMS = [
@@ -88,6 +92,8 @@ export function PosSidebar({
   onToggleInStockOnly,
   onResetFilters,
   onOpenDeals,
+  mobileOpen,
+  onMobileClose,
 }: PosSidebarProps) {
   const pathname = usePathname();
   const { user, isAdmin, logout } = useAuth();
@@ -108,23 +114,8 @@ export function PosSidebar({
     (selectedPriceRange && selectedPriceRange !== 'all') ||
     inStockOnly;
 
-  return (
+  const renderSidebarContent = (isMobile = false) => (
     <>
-      <Box
-        sx={{
-          width: { xs: 260, xl: 280 },
-          flexShrink: 0,
-          display: { xs: 'none', lg: 'flex' },
-          backgroundColor: '#FFFFFF',
-          color: '#1E293B',
-          borderRight: '1px solid #E2E8F0',
-          height: 'calc(100vh - 70px)',
-          flexDirection: 'column',
-          position: 'sticky',
-          top: 70,
-          overflow: 'hidden',
-        }}
-      >
         {/* Scrollable Middle Container */}
         <Box
           sx={{
@@ -748,7 +739,83 @@ export function PosSidebar({
             </Box>
           )}
         </Box>
+      </>
+    );
+
+  return (
+    <>
+      {/* Desktop Sticky Sidebar */}
+      <Box
+        sx={{
+          width: { xs: 260, xl: 280 },
+          flexShrink: 0,
+          display: { xs: 'none', lg: 'flex' },
+          backgroundColor: '#FFFFFF',
+          color: '#1E293B',
+          borderRight: '1px solid #E2E8F0',
+          height: 'calc(100vh - 70px)',
+          flexDirection: 'column',
+          position: 'sticky',
+          top: 70,
+          overflow: 'hidden',
+        }}
+      >
+        {renderSidebarContent(false)}
       </Box>
+
+      {/* Mobile Drawer (visible on mobile screens when toggled) */}
+      <Drawer
+        anchor="left"
+        open={Boolean(mobileOpen)}
+        onClose={onMobileClose}
+        PaperProps={{
+          sx: {
+            width: 300,
+            maxWidth: '85vw',
+            backgroundColor: '#FFFFFF',
+            color: '#1E293B',
+            display: { xs: 'flex', lg: 'none' },
+            flexDirection: 'column',
+            height: '100%',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1.5,
+            borderBottom: '1px solid #E2E8F0',
+            backgroundColor: '#F8FAFC',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '8px',
+                backgroundColor: '#FF7A00',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
+              }}
+            >
+              <FilterAltIcon sx={{ fontSize: 16 }} />
+            </Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '0.95rem' }}>
+              Menu & Filters
+            </Typography>
+          </Box>
+          <IconButton size="small" onClick={onMobileClose} sx={{ color: '#64748B' }}>
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
+        {renderSidebarContent(true)}
+      </Drawer>
 
       {/* User Profile Dialog */}
       <UserProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />

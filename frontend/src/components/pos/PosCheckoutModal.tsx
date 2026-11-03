@@ -41,6 +41,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useOfferStore } from '../../store/useOfferStore';
 import { useOrderSocket } from '../../context/SocketContext';
+import { useStores } from '../../hooks/useStores';
 import { ApiService } from '../../services/api';
 import { PaymentMethod, Order } from '../../types/order';
 
@@ -64,6 +65,8 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
   const { user, updateUser } = useAuthStore();
   const { trackOrder } = useOrderSocket();
   const { appliedOffer, applyOffer } = useOfferStore();
+  const { stores } = useStores();
+  const currentStore = stores.find((s) => s.id === storeId) || stores[0];
 
   const [tableNumber, setTableNumber] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -216,6 +219,283 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
     onClose();
   };
 
+  const handlePrintReceipt = () => {
+    if (!orderSuccess) return;
+    if (typeof window === 'undefined') return;
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const frameDoc = printFrame.contentWindow?.document;
+    if (!frameDoc) {
+      window.print();
+      return;
+    }
+
+    const itemsRows = orderSuccess.items
+      .map(
+        (it) => `
+        <tr>
+          <td style="padding: 7px 0; font-size: 13px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #f1f5f9;">${it.qty}x ${it.name}</td>
+          <td style="padding: 7px 0; text-align: right; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">₹${(it.qty * it.price).toFixed(2)}</td>
+        </tr>
+      `
+      )
+      .join('');
+
+    const discountHtml =
+      orderSuccess.discountAmount > 0
+        ? `
+        <tr style="color: #16a34a;">
+          <td style="padding: 5px 0; font-size: 13px; font-weight: 600;">Offer Applied (${orderSuccess.offerCode || 'DISCOUNT'})</td>
+          <td style="padding: 5px 0; text-align: right; font-size: 13px; font-weight: 700;">-₹${orderSuccess.discountAmount.toFixed(2)}</td>
+        </tr>
+      `
+        : '';
+
+    const addressHtml = orderSuccess.deliveryAddress
+      ? `
+        <div style="margin-top: 14px; padding: 10px 12px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+          <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">Delivery Address</div>
+          <div style="font-size: 12px; font-weight: 600; color: #1e293b;">${orderSuccess.deliveryAddress}</div>
+        </div>
+      `
+      : '';
+
+    const customerName = user?.name?.trim() ? user.name : 'Valued Customer';
+    const storeName = currentStore?.name || 'StorePulse Food Hub';
+    const storeLocation = currentStore?.location || 'Savedi, Ahilyanagar, Maharashtra';
+
+    const receiptHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt_${orderSuccess.id.slice(0, 8)}</title>
+          <meta charset="utf-8" />
+          <style>
+            @page {
+              size: auto;
+              margin: 8mm;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              color: #0f172a;
+              background: #ffffff;
+              margin: 0;
+              padding: 12px;
+            }
+            .receipt-box {
+              max-width: 420px;
+              margin: 0 auto;
+              border: 1px solid #cbd5e1;
+              border-radius: 12px;
+              padding: 22px;
+              box-sizing: border-box;
+            }
+            .store-header {
+              text-align: center;
+              border-bottom: 2px dashed #cbd5e1;
+              padding-bottom: 14px;
+              margin-bottom: 14px;
+            }
+            .store-brand {
+              font-size: 22px;
+              font-weight: 900;
+              color: #0f172a;
+              letter-spacing: -0.5px;
+            }
+            .brand-accent {
+              color: #ff7a00;
+            }
+            .store-outlet {
+              font-size: 14px;
+              font-weight: 700;
+              color: #334155;
+              margin-top: 3px;
+            }
+            .store-location {
+              font-size: 11px;
+              color: #64748b;
+              margin-top: 2px;
+            }
+            .doc-title {
+              display: inline-block;
+              margin-top: 8px;
+              padding: 3px 10px;
+              background: #f1f5f9;
+              border-radius: 6px;
+              font-size: 10px;
+              font-weight: 800;
+              letter-spacing: 0.06em;
+              color: #475569;
+              text-transform: uppercase;
+            }
+            .meta-row {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+              padding-bottom: 12px;
+              margin-bottom: 12px;
+              border-bottom: 1px solid #f1f5f9;
+            }
+            .meta-item {
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            }
+            .meta-label {
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+              color: #94a3b8;
+            }
+            .meta-value {
+              font-size: 12px;
+              font-weight: 700;
+              color: #1e293b;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .section-label {
+              font-size: 11px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: #64748b;
+              margin-bottom: 6px;
+            }
+            .totals-table {
+              margin-top: 10px;
+              border-top: 1px dashed #cbd5e1;
+              padding-top: 8px;
+            }
+            .grand-total-row td {
+              padding: 10px 0 4px 0;
+              border-top: 2px solid #0f172a;
+              font-size: 15px;
+              font-weight: 900;
+              color: #0f172a;
+            }
+            .grand-total-price {
+              color: #ff7a00;
+              font-size: 17px;
+            }
+            .payment-row {
+              margin-top: 12px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 7px 10px;
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              border-radius: 8px;
+              font-size: 11px;
+              font-weight: 700;
+              color: #166534;
+            }
+            .receipt-footer {
+              margin-top: 18px;
+              text-align: center;
+              font-size: 11px;
+              color: #94a3b8;
+              border-top: 1px dashed #e2e8f0;
+              padding-top: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-box">
+            <div class="store-header">
+              <div class="store-brand">Store<span class="brand-accent">Pulse</span></div>
+              <div class="store-outlet">${storeName}</div>
+              <div class="store-location">📍 ${storeLocation}</div>
+              <div class="doc-title">Tax Invoice & Cash Memo</div>
+            </div>
+
+            <div class="meta-row">
+              <div class="meta-item">
+                <span class="meta-label">Order ID</span>
+                <span class="meta-value">#${orderSuccess.id.slice(0, 8)}</span>
+                <span class="meta-label" style="margin-top: 4px;">Customer</span>
+                <span class="meta-value">${customerName}</span>
+              </div>
+              <div class="meta-item" style="text-align: right;">
+                <span class="meta-label">Time</span>
+                <span class="meta-value">${orderSuccess.timestamp}</span>
+                <span class="meta-label" style="margin-top: 4px;">Order Type</span>
+                <span class="meta-value">${orderSuccess.deliveryAddress ? 'Home Delivery' : 'Dine-In / Counter'}</span>
+              </div>
+            </div>
+
+            <div class="section-label">Ordered Items</div>
+            <table>
+              <tbody>
+                ${itemsRows}
+              </tbody>
+            </table>
+
+            <table class="totals-table">
+              <tbody>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 13px; color: #64748b;">Subtotal</td>
+                  <td style="padding: 4px 0; text-align: right; font-size: 13px; font-weight: 600;">₹${orderSuccess.subtotal.toFixed(2)}</td>
+                </tr>
+                ${discountHtml}
+                <tr>
+                  <td style="padding: 4px 0; font-size: 13px; color: #64748b;">Tax (5% GST)</td>
+                  <td style="padding: 4px 0; text-align: right; font-size: 13px; font-weight: 600;">₹${orderSuccess.tax.toFixed(2)}</td>
+                </tr>
+                <tr class="grand-total-row">
+                  <td>Grand Total</td>
+                  <td class="grand-total-price" style="text-align: right;">₹${orderSuccess.total.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="payment-row">
+              <span>Payment Method</span>
+              <span>${orderSuccess.paymentMethod} (PAID)</span>
+            </div>
+
+            ${addressHtml}
+
+            <div class="receipt-footer">
+              <div style="font-weight: 700; color: #475569; margin-bottom: 2px;">Thank you for dining with StorePulse!</div>
+              <div>FSSAI Lic. & GST Compliant Invoice • Please Visit Again</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    frameDoc.open();
+    frameDoc.write(receiptHtml);
+    frameDoc.close();
+
+    setTimeout(() => {
+      try {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+      } catch {
+        window.print();
+      } finally {
+        setTimeout(() => {
+          try {
+            document.body.removeChild(printFrame);
+          } catch {}
+        }, 1500);
+      }
+    }, 250);
+  };
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -236,6 +516,7 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
       }}
     >
       <DialogTitle
+        className="no-print"
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -269,8 +550,43 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               </Typography>
             </Box>
 
+            {/* Print Isolation Styles */}
+            <style jsx global>{`
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                .no-print,
+                .no-print *,
+                .MuiDialogTitle-root,
+                .MuiDialogTitle-root *,
+                .MuiBackdrop-root,
+                button {
+                  display: none !important;
+                  visibility: hidden !important;
+                }
+                #printable-receipt-card,
+                #printable-receipt-card * {
+                  visibility: visible !important;
+                }
+                #printable-receipt-card {
+                  position: fixed !important;
+                  left: 50% !important;
+                  top: 20px !important;
+                  transform: translateX(-50%) !important;
+                  width: 100% !important;
+                  max-width: 440px !important;
+                  margin: 0 !important;
+                  box-shadow: none !important;
+                  border: 1px solid #cbd5e1 !important;
+                  background: #ffffff !important;
+                }
+              }
+            `}</style>
+
             {/* Bill Receipt Card */}
             <Paper
+              id="printable-receipt-card"
               elevation={0}
               sx={{
                 p: 2.5,
@@ -369,11 +685,11 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
               )}
             </Paper>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box className="no-print" sx={{ display: 'flex', gap: 2 }}>
               <Button
                 variant="outlined"
                 fullWidth
-                onClick={() => window.print()}
+                onClick={handlePrintReceipt}
                 sx={{
                   borderColor: '#CBD5E1',
                   color: '#475569',

@@ -53,8 +53,12 @@ export function Navbar() {
     return null;
   }
 
-  // Navigation links are unified in the sidebar
-  const NAV_LINKS: Array<{ label: string; path: string; icon: React.ReactNode }> = [];
+  // Essential navigation links (Order Menu, My Orders, Deals)
+  const NAV_LINKS = [
+    { label: 'Order Menu', path: '/pos', icon: <RestaurantMenuIcon sx={{ fontSize: 18 }} /> },
+    { label: 'My Orders', path: '/my-orders', icon: <ShoppingBagIcon sx={{ fontSize: 18 }} /> },
+    { label: 'Special Deals', path: '/pos?deals=true', icon: <LocalOfferIcon sx={{ fontSize: 18 }} /> },
+  ];
 
   const ADMIN_LINKS = [
     { label: 'Analytics Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 18 }} /> },
@@ -357,47 +361,44 @@ export function Navbar() {
           </Button>
         )}
 
-        {/* Drawer Links */}
-        {NAV_LINKS.length > 0 && (
-          <>
-            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, px: 1, letterSpacing: '0.08em' }}>
-              CUSTOMER ACCOUNT
-            </Typography>
-            <List sx={{ mt: 0.5, mb: 2 }}>
-              {NAV_LINKS.map((link) => {
-                const isActive = pathname === link.path;
-                return (
-                  <ListItem key={link.path} disablePadding sx={{ mb: 0.5 }}>
-                    <ListItemButton
-                      component={Link}
-                      href={link.path}
-                      onClick={handleDrawerToggle}
-                      sx={{
-                        borderRadius: '10px',
-                        backgroundColor: isActive ? 'rgba(255, 122, 0, 0.15)' : 'transparent',
-                        color: isActive ? '#FF7A00' : '#E2E8F0',
-                        '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ color: isActive ? '#FF7A00' : '#94A3B8', minWidth: 36 }}>
-                        {link.icon}
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={link.label}
-                        primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 700 : 500 }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                );
-              })}
-            </List>
-          </>
-        )}
+        {/* Navigation Section */}
+        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 800, px: 1, letterSpacing: '0.08em', display: 'block', mb: 0.5 }}>
+          NAVIGATION
+        </Typography>
+        <List sx={{ mt: 0.5, mb: 2 }}>
+          {NAV_LINKS.map((link) => {
+            const isActive = pathname === link.path || (link.path === '/pos' && pathname === '/');
+            return (
+              <ListItem key={link.path} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  component={Link}
+                  href={link.path}
+                  onClick={handleDrawerToggle}
+                  sx={{
+                    borderRadius: '10px',
+                    backgroundColor: isActive ? 'rgba(255, 122, 0, 0.15)' : 'transparent',
+                    color: isActive ? '#FF7A00' : '#E2E8F0',
+                    fontWeight: isActive ? 700 : 500,
+                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: isActive ? '#FF7A00' : '#94A3B8', minWidth: 36 }}>
+                    {link.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={link.label}
+                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 700 : 500 }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
 
         {/* Admin Navigation Links if logged in as Admin */}
         {isAdmin && (
           <>
-            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, px: 1, letterSpacing: '0.08em' }}>
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 800, px: 1, letterSpacing: '0.08em', display: 'block', mb: 0.5 }}>
               ADMINISTRATION
             </Typography>
             <List sx={{ mt: 0.5 }}>
@@ -432,28 +433,77 @@ export function Navbar() {
         )}
 
         {/* Drawer Footer */}
-        {user && (
+        {user ? (
+          <Box sx={{ mt: 'auto', pt: 2 }}>
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', mb: 2 }} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Button
+                fullWidth
+                startIcon={<AccountCircleIcon sx={{ fontSize: 18 }} />}
+                onClick={() => {
+                  handleDrawerToggle();
+                  setProfileOpen(true);
+                }}
+                sx={{
+                  color: '#CBD5E1',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  justifyContent: 'flex-start',
+                  px: 2,
+                  py: 0.9,
+                  textTransform: 'none',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF' },
+                }}
+              >
+                My Profile
+              </Button>
+              <Button
+                fullWidth
+                startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}
+                onClick={() => {
+                  handleDrawerToggle();
+                  logout();
+                }}
+                sx={{
+                  color: '#F87171',
+                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  justifyContent: 'flex-start',
+                  px: 2,
+                  py: 0.9,
+                  textTransform: 'none',
+                  '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+                }}
+              >
+                Sign Out
+              </Button>
+            </Box>
+          </Box>
+        ) : (
           <Box sx={{ mt: 'auto', pt: 2 }}>
             <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', mb: 2 }} />
             <Button
+              component={Link}
+              href="/login"
+              onClick={handleDrawerToggle}
+              variant="contained"
               fullWidth
-              startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}
-              onClick={() => {
-                handleDrawerToggle();
-                logout();
-              }}
               sx={{
-                color: '#F87171',
-                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                backgroundColor: '#FF7A00',
+                color: '#FFFFFF',
                 borderRadius: '10px',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '0.85rem',
-                justifyContent: 'flex-start',
-                px: 2,
-                '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+                textTransform: 'none',
+                py: 1,
+                '&:hover': { backgroundColor: '#E06500' },
               }}
             >
-              Sign Out
+              Sign In / Register
             </Button>
           </Box>
         )}

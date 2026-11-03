@@ -25,6 +25,7 @@ import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import TuneIcon from '@mui/icons-material/Tune';
 
 import { PosSidebar } from '../../components/pos/PosSidebar';
 import { PosHeader } from '../../components/pos/PosHeader';
@@ -62,6 +63,7 @@ export default function PosPage() {
   const [priceRange, setPriceRange] = useState<string>('all');
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const {
     inspectedItem,
@@ -169,6 +171,8 @@ export default function PosPage() {
           setSearchInput('');
         }}
         onOpenDeals={() => setDealAlertOpen(true)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
       />
 
       {/* 2. Center Menu Feed + Header */}
@@ -189,6 +193,7 @@ export default function PosPage() {
           onStoreChange={(id) => setCurrentStoreId(id)}
           onOpenCheckout={() => setIsCheckoutOpen(true)}
           onShowDeals={() => setDealAlertOpen(true)}
+          onToggleFilterDrawer={() => setMobileSidebarOpen(true)}
         />
 
         {/* Content Body */}
@@ -357,6 +362,29 @@ export default function PosPage() {
               scrollbarWidth: 'none',
             }}
           >
+            {/* Quick Filter Drawer Trigger on Mobile */}
+            <Chip
+              icon={<TuneIcon sx={{ fontSize: '16px !important' }} />}
+              label="Filters"
+              onClick={() => setMobileSidebarOpen(true)}
+              sx={{
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                borderRadius: '10px',
+                px: 1,
+                py: 1.8,
+                backgroundColor: (selectedCategory && selectedCategory !== 'All') || (priceRange && priceRange !== 'all') || inStockOnly ? '#FF7A00' : '#FFF7ED',
+                color: (selectedCategory && selectedCategory !== 'All') || (priceRange && priceRange !== 'all') || inStockOnly ? '#FFFFFF !important' : '#EA580C',
+                border: (selectedCategory && selectedCategory !== 'All') || (priceRange && priceRange !== 'all') || inStockOnly ? '1.5px solid #FF7A00' : '1.5px solid #FDBA74',
+                boxShadow: '0 2px 8px rgba(234, 88, 12, 0.15)',
+                '& .MuiChip-icon': {
+                  color: ((selectedCategory && selectedCategory !== 'All') || (priceRange && priceRange !== 'all') || inStockOnly ? '#FFFFFF' : '#EA580C') + ' !important',
+                },
+                '&:hover': {
+                  backgroundColor: '#FFEDD5',
+                },
+              }}
+            />
             {MOBILE_CATEGORIES.map((cat) => {
               const isActive = selectedCategory === cat.label || (selectedCategory === 'All' && cat.label === 'All');
               return (
