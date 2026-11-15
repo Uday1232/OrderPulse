@@ -14,6 +14,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import { useSnackbar } from 'notistack';
 import { Item } from '../../types/order';
 import { useCartStore } from '../../store/useCartStore';
 import { getMediaUrl, getCategoryFallback } from '../../utils/imageUrl';
@@ -24,6 +25,7 @@ interface PosDetailPanelProps {
 }
 
 export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
+  const { enqueueSnackbar } = useSnackbar();
   const {
     inspectionQty,
     incrementInspectionQty,
@@ -64,6 +66,10 @@ export function PosDetailPanel({ item, onClose }: PosDetailPanelProps) {
 
   const handleAddToCart = () => {
     addItem(item, inspectionQty);
+    enqueueSnackbar(`🛒 Added ${item.name} (${inspectionQty}x) to order!`, {
+      variant: 'success',
+      autoHideDuration: 2500,
+    });
     if (onClose) {
       onClose();
     }

@@ -37,6 +37,7 @@ import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 
+import { useSnackbar } from 'notistack';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useOfferStore } from '../../store/useOfferStore';
@@ -52,6 +53,7 @@ interface PosCheckoutModalProps {
 }
 
 export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalProps) {
+  const { enqueueSnackbar } = useSnackbar();
   const {
     items,
     updateQty,
@@ -143,6 +145,10 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
     if (!trimmedAddress) {
       setAddressError('Delivery address is COMPULSORY to place an order. Please enter your address.');
       setErrorMessage('Delivery address is compulsory. Please enter your address above.');
+      enqueueSnackbar('⚠️ Delivery address is required to place your order!', {
+        variant: 'warning',
+        autoHideDuration: 4000,
+      });
       const el = document.getElementById('checkout-delivery-address-input');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -206,8 +212,18 @@ export function PosCheckoutModal({ open, onClose, storeId }: PosCheckoutModalPro
       });
       clearCart();
       applyOffer(null);
+
+      enqueueSnackbar(`🎉 Order #${res.data.id.slice(0, 8)} placed successfully!`, {
+        variant: 'success',
+        autoHideDuration: 4000,
+      });
     } catch (err: unknown) {
-      setErrorMessage((err as Error).message || 'Failed to place order');
+      const msg = (err as Error).message || 'Failed to place order';
+      setErrorMessage(msg);
+      enqueueSnackbar(`❌ ${msg}`, {
+        variant: 'error',
+        autoHideDuration: 5000,
+      });
     } finally {
       setIsSubmitting(false);
     }

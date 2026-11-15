@@ -9,6 +9,14 @@ import { RealtimeAlert } from '../components/RealtimeAlert';
 export const metadata: Metadata = {
   title: 'StorePulse POS - Multi-Store Restaurant Order Management',
   description: 'Production-ready restaurant POS platform and multi-store management system with real-time tracking, Redis caching, and analytics.',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,13 +40,13 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body style={{ margin: 0, padding: 0, backgroundColor: '#0D1117', color: '#F3F4F6' }}>
+      <body style={{ margin: 0, padding: 0, backgroundColor: '#0D1117', color: '#F3F4F6', overflowX: 'hidden' }}>
         <ThemeRegistry>
           <QueryClientProvider>
             <SocketProvider>
               <NotificationProvider>
                 <Navbar />
-                <main style={{ minHeight: 'calc(100vh - 70px)' }}>{children}</main>
+                <main style={{ minHeight: 'calc(100vh - 70px)', overflowX: 'hidden' }}>{children}</main>
                 <RealtimeAlert />
               </NotificationProvider>
             </SocketProvider>

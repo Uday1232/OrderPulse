@@ -23,6 +23,7 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { useSnackbar } from 'notistack';
 
 import { useOfferStore, DealOffer } from '../../store/useOfferStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -35,6 +36,7 @@ interface PosDealsModalProps {
 
 export function PosDealsModal({ open, onClose, onSelectDeal }: PosDealsModalProps) {
   const { offers, appliedOffer, applyOffer } = useOfferStore();
+  const { enqueueSnackbar } = useSnackbar();
   const { isAdmin } = useAuthStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -43,6 +45,10 @@ export function PosDealsModal({ open, onClose, onSelectDeal }: PosDealsModalProp
 
   const handleApply = (offer: DealOffer) => {
     applyOffer(offer);
+    enqueueSnackbar(`🏷️ Coupon "${offer.code}" applied! Save ${offer.discountType === 'PERCENT' ? `${offer.discountValue}%` : `₹${offer.discountValue}`}`, {
+      variant: 'success',
+      autoHideDuration: 3000,
+    });
     if (onSelectDeal) onSelectDeal(offer);
     onClose();
   };

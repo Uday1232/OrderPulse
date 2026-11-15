@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Typography, Card, IconButton, Rating } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import { useSnackbar } from 'notistack';
 import { Item } from '../../types/order';
 import { useCartStore } from '../../store/useCartStore';
 import { getMediaUrl, getCategoryFallback } from '../../utils/imageUrl';
@@ -16,6 +17,7 @@ interface PosItemCardProps {
 
 export function PosItemCard({ item, isSelected, onInspect }: PosItemCardProps) {
   const { addItem, updateQty, getItemQtyInCart } = useCartStore();
+  const { enqueueSnackbar } = useSnackbar();
   const qtyInCart = getItemQtyInCart(item.id);
 
   // Original price for discount illusion matching reference design
@@ -24,11 +26,21 @@ export function PosItemCard({ item, isSelected, onInspect }: PosItemCardProps) {
   const handleIncrement = (e: React.MouseEvent) => {
     e.stopPropagation();
     addItem(item, 1);
+    enqueueSnackbar(`🛒 Added ${item.name} to cart`, {
+      variant: 'success',
+      autoHideDuration: 2000,
+    });
   };
 
   const handleDecrement = (e: React.MouseEvent) => {
     e.stopPropagation();
     updateQty(item.id, -1);
+    if (qtyInCart === 1) {
+      enqueueSnackbar(`Removed ${item.name} from cart`, {
+        variant: 'info',
+        autoHideDuration: 1500,
+      });
+    }
   };
 
   return (
