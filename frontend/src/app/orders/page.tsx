@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Box,
@@ -22,19 +22,21 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
-import { AdminSidebar } from '../../components/admin/AdminSidebar';
-import { AdminGuard } from '../../components/auth/AdminGuard';
-import { useStores } from '../../hooks/useStores';
-import { useOrders } from '../../hooks/useOrders';
-import { useDebounce } from '../../hooks/useDebounce';
-import { OrderStatus } from '../../types/order';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminGuard } from '@/components/auth/AdminGuard';
+import { useStores } from '@/hooks/useStores';
+import { useOrders } from '@/hooks/useOrders';
+import { useDebounce } from '@/hooks/useDebounce';
+import { OrderStatus } from '@/types/order';
 
 export default function OrdersListPage() {
   const { stores } = useStores();
@@ -43,6 +45,12 @@ export default function OrdersListPage() {
   const [searchInput, setSearchInput] = useState<string>('');
   const debouncedSearch = useDebounce(searchInput, 500);
 
+  // Cursor pagination state
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null]);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+
   // Set initial store
   React.useEffect(() => {
     if (stores.length > 0 && !selectedStore) {
@@ -50,11 +58,64 @@ export default function OrdersListPage() {
     }
   }, [stores, selectedStore]);
 
-  const { orders, isLoading, isError, error, pagination } = useOrders({
+  const { orders, isLoading, isFetching, isError, error, pagination, refetch } = useOrders({
     storeId: selectedStore,
+    cursor,
     status: statusFilter,
-    limit: 10,
+    limit,
   });
+
+  const handleStoreChange = (newStore: string) => {
+    setSelectedStore(newStore);
+    setCursor(null);
+    setCursorHistory([null]);
+    setPage(1);
+  };
+
+  const handleStatusChange = (newStatus: OrderStatus | '') => {
+    setStatusFilter(newStatus);
+    setCursor(null);
+    setCursorHistory([null]);
+    setPage(1);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCursor(null);
+    setCursorHistory([null]);
+    setPage(1);
+  };
+
+  const handleNext = () => {
+    if (pagination?.hasMore && pagination.nextCursor) {
+      setCursorHistory((prev) => [...prev, pagination.nextCursor]);
+      setCursor(pagination.nextCursor);
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (page > 1) {
+      const updated = [...cursorHistory];
+      updated.pop(); // pop current
+      const prevCursor = updated[updated.length - 1] ?? null;
+      setCursorHistory(updated);
+      setCursor(prevCursor);
+      setPage((prev) => prev - 1);
+    }
+  };
+
+  const displayedOrders = useMemo(() => {
+    if (!debouncedSearch.trim()) return orders;
+    const term = debouncedSearch.toLowerCase().trim();
+    return orders.filter(
+      (o) =>
+        o.id.toLowerCase().includes(term) ||
+        (o.payment_method && o.payment_method.toLowerCase().includes(term)) ||
+        o.status.toLowerCase().includes(term) ||
+        (o.items && o.items.some((i) => i.name.toLowerCase().includes(term)))
+    );
+  }, [orders, debouncedSearch]);
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -73,7 +134,7 @@ export default function OrdersListPage() {
 
   return (
     <AdminGuard>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC' }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 'calc(100vh - 64px)', backgroundColor: '#F8FAFC' }}>
         <AdminSidebar />
 
       <Box sx={{ flex: 1, p: { xs: 2, sm: 2.5, md: 4 }, overflowY: 'auto' }}>
@@ -125,7 +186,7 @@ export default function OrdersListPage() {
           <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
             <Select
               value={selectedStore}
-              onChange={(e) => setSelectedStore(e.target.value)}
+              onChange={(e) => handleStoreChange(e.target.value)}
               displayEmpty
               sx={{
                 borderRadius: '10px',
@@ -162,7 +223,7 @@ export default function OrdersListPage() {
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
+              onChange={(e) => handleStatusChange(e.target.value as OrderStatus | '')}
               displayEmpty
               sx={{
                 borderRadius: '10px',
@@ -198,7 +259,7 @@ export default function OrdersListPage() {
           {/* Search Bar */}
           <TextField
             size="small"
-            placeholder="Search order ID..."
+            placeholder="Search order ID or item..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
@@ -258,13 +319,27 @@ export default function OrdersListPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {orders.map((order, idx) => {
+              {displayedOrders.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 6 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 700, color: '#64748B', mb: 0.5 }}>
+                      No orders found
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                      Try selecting a different store branch or clearing your search / status filter.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {displayedOrders.map((order, idx) => {
                 const statusStyle = getStatusColor(order.status);
                 const itemsCount = order.items.reduce((sum, item) => sum + (item.qty || item.quantity || 1), 0);
+                const rowNum = (page - 1) * limit + idx + 1;
 
                 return (
                   <TableRow key={order.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{rowNum}</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#0F172A' }}>
                       #{order.id.slice(0, 8)}
                     </TableCell>
@@ -325,6 +400,151 @@ export default function OrdersListPage() {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination Control Bar at Bottom of Orders Table */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+            mt: 2.5,
+            p: 2,
+            backgroundColor: '#FFFFFF',
+            borderRadius: '14px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
+          }}
+        >
+          {/* Left: Rows Per Page & Count Indicator */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.85rem' }}>
+                Rows per page:
+              </Typography>
+              <FormControl size="small">
+                <Select
+                  value={limit}
+                  onChange={(e) => handleLimitChange(Number(e.target.value))}
+                  sx={{
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    height: 34,
+                    backgroundColor: '#F8FAFC',
+                    '& .MuiSelect-select': { py: 0.5, px: 1.2 },
+                    '& fieldset': { borderColor: '#CBD5E1' },
+                  }}
+                >
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={25}>25</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Typography variant="body2" sx={{ color: '#64748B', fontSize: '0.85rem' }}>
+              Showing <strong style={{ color: '#0F172A' }}>{displayedOrders.length}</strong> orders on Page <strong style={{ color: '#0F172A' }}>{page}</strong>
+            </Typography>
+
+            {isFetching && (
+              <Chip
+                label="Updating..."
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  backgroundColor: '#EFF6FF',
+                  color: '#3B82F6',
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Right: Prev / Next Pagination Controls */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+            <Button
+              onClick={handlePrev}
+              disabled={page === 1 || isFetching}
+              startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
+              variant="outlined"
+              size="small"
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                borderColor: '#CBD5E1',
+                color: '#334155',
+                px: 2,
+                py: 0.6,
+                '&:hover': { borderColor: '#94A3B8', backgroundColor: '#F8FAFC' },
+                '&.Mui-disabled': { borderColor: '#E2E8F0', color: '#94A3B8' },
+              }}
+            >
+              Previous
+            </Button>
+
+            <Box
+              sx={{
+                minWidth: 34,
+                height: 34,
+                borderRadius: '8px',
+                backgroundColor: '#0F172A',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                px: 1,
+              }}
+            >
+              {page}
+            </Box>
+
+            <Button
+              onClick={handleNext}
+              disabled={!pagination?.hasMore || isFetching}
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+              variant="outlined"
+              size="small"
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                borderColor: '#CBD5E1',
+                color: '#334155',
+                px: 2,
+                py: 0.6,
+                '&:hover': { borderColor: '#94A3B8', backgroundColor: '#F8FAFC' },
+                '&.Mui-disabled': { borderColor: '#E2E8F0', color: '#94A3B8' },
+              }}
+            >
+              Next
+            </Button>
+
+            <Tooltip title="Refresh Orders">
+              <IconButton
+                onClick={() => refetch()}
+                disabled={isFetching}
+                size="small"
+                sx={{
+                  color: '#64748B',
+                  borderRadius: '8px',
+                  border: '1px solid #E2E8F0',
+                  p: 0.8,
+                  '&:hover': { backgroundColor: '#F1F5F9', color: '#0F172A' },
+                }}
+              >
+                <RefreshIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
       </Box>
     </Box>
     </AdminGuard>

@@ -601,6 +601,7 @@ export function PosSidebar({
             p: 1.8,
             borderTop: '1px solid #E2E8F0',
             backgroundColor: '#F8FAFC',
+            flexShrink: 0,
           }}
         >
           {user ? (
@@ -753,10 +754,10 @@ export function PosSidebar({
           backgroundColor: '#FFFFFF',
           color: '#1E293B',
           borderRight: '1px solid #E2E8F0',
-          height: 'calc(100vh - 70px)',
+          height: 'calc(100vh - 64px)',
           flexDirection: 'column',
           position: 'sticky',
-          top: 70,
+          top: '64px',
           overflow: 'hidden',
         }}
       >

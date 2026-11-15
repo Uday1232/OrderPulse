@@ -19,16 +19,33 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { useAuth } from '../../hooks/useAuth';
 import { UserProfileDialog } from '../profile/UserProfileDialog';
 
-const NAV_ITEMS = [
-  { label: 'Analytics Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Orders', path: '/orders', icon: <ViewListIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Create Order', path: '/pos', icon: <AddShoppingCartIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Stores', path: '/admin/stores', icon: <StoreIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Menu Items', path: '/admin/menu', icon: <RestaurantMenuIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Offers & Deals', path: '/admin/offers', icon: <LocalOfferIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Staff & Roles', path: '/admin/users', icon: <PeopleAltIcon sx={{ fontSize: 20 }} /> },
-  { label: 'Archive', path: '/archive', icon: <ArchiveIcon sx={{ fontSize: 20 }} /> },
+const NAV_GROUPS = [
+  {
+    title: 'OPERATIONS',
+    items: [
+      { label: 'Orders', path: '/orders', icon: <ViewListIcon sx={{ fontSize: 19 }} /> },
+      { label: 'Create Order', path: '/pos', icon: <AddShoppingCartIcon sx={{ fontSize: 19 }} /> },
+      { label: 'Analytics Dashboard', path: '/dashboard', icon: <DashboardIcon sx={{ fontSize: 19 }} /> },
+    ],
+  },
+  {
+    title: 'MANAGEMENT',
+    items: [
+      { label: 'Menu Items', path: '/admin/menu', icon: <RestaurantMenuIcon sx={{ fontSize: 19 }} /> },
+      { label: 'Offers & Deals', path: '/admin/offers', icon: <LocalOfferIcon sx={{ fontSize: 19 }} /> },
+      { label: 'Stores', path: '/admin/stores', icon: <StoreIcon sx={{ fontSize: 19 }} /> },
+      { label: 'Staff & Roles', path: '/admin/users', icon: <PeopleAltIcon sx={{ fontSize: 19 }} /> },
+    ],
+  },
+  {
+    title: 'SYSTEM',
+    items: [
+      { label: 'Archive', path: '/archive', icon: <ArchiveIcon sx={{ fontSize: 19 }} /> },
+    ],
+  },
 ];
+
+const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -40,64 +57,101 @@ export function AdminSidebar() {
 
   return (
     <>
-      {/* 1. Desktop Permanent Sidebar */}
+      {/* 1. Desktop Fixed/Sticky Sidebar */}
       <Box
         sx={{
-          width: 240,
+          width: 250,
           flexShrink: 0,
           display: { xs: 'none', md: 'flex' },
           backgroundColor: '#0F172A',
           color: '#FFFFFF',
-          minHeight: 'calc(100vh - 70px)',
-          p: 2.5,
+          height: 'calc(100vh - 64px)',
+          position: 'sticky',
+          top: '64px',
+          p: 2,
           flexDirection: 'column',
           justifyContent: 'space-between',
           borderRight: '1px solid #1E293B',
+          zIndex: 10,
+          overflow: 'hidden',
         }}
       >
-        <Box>
-          {/* Navigation Items */}
-          <Stack spacing={0.8}>
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.path || (item.path === '/orders' && pathname.startsWith('/orders/'));
-
-              return (
-                <Button
-                  key={item.label}
-                  component={Link}
-                  href={item.path}
-                  startIcon={item.icon}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    px: 2,
-                    py: 1.1,
-                    borderRadius: '12px',
-                    backgroundColor: isActive ? '#1E293B' : 'transparent',
-                    color: isActive ? '#38BDF8' : '#94A3B8',
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: '0.875rem',
-                    borderLeft: isActive ? '3px solid #38BDF8' : '3px solid transparent',
-                    '&:hover': {
-                      backgroundColor: '#1E293B',
-                      color: '#FFFFFF',
-                    },
-                  }}
-                >
-                  {item.label}
-                </Button>
-              );
-            })}
-          </Stack>
-        </Box>
-
-        {/* User Session Footer */}
+        {/* Navigation Items (Scrollable if height is restricted) */}
         <Box
           sx={{
-            pt: 2,
+            flex: 1,
+            overflowY: 'auto',
+            pr: 0.5,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            '&::-webkit-scrollbar': { width: '4px' },
+            '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px' },
+          }}
+        >
+          {NAV_GROUPS.map((group) => (
+            <Box key={group.title}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#64748B',
+                  fontWeight: 800,
+                  fontSize: '0.68rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  px: 1.5,
+                  mb: 0.8,
+                  display: 'block',
+                }}
+              >
+                {group.title}
+              </Typography>
+              <Stack spacing={0.5}>
+                {group.items.map((item) => {
+                  const isActive = pathname === item.path || (item.path === '/orders' && pathname.startsWith('/orders/'));
+
+                  return (
+                    <Button
+                      key={item.label}
+                      component={Link}
+                      href={item.path}
+                      startIcon={item.icon}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        px: 1.6,
+                        py: 0.9,
+                        borderRadius: '10px',
+                        backgroundColor: isActive ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                        color: isActive ? '#38BDF8' : '#94A3B8',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: '0.84rem',
+                        borderLeft: isActive ? '3px solid #38BDF8' : '3px solid transparent',
+                        transition: 'all 0.15s ease',
+                        '&:hover': {
+                          backgroundColor: '#1E293B',
+                          color: '#FFFFFF',
+                        },
+                      }}
+                    >
+                      {item.label}
+                    </Button>
+                  );
+                })}
+              </Stack>
+            </Box>
+          ))}
+        </Box>
+
+        {/* User Session Footer (Pinned at bottom) */}
+        <Box
+          sx={{
+            pt: 1.5,
+            mt: 1,
             borderTop: '1px solid #1E293B',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexShrink: 0,
           }}
         >
           <Box
@@ -108,7 +162,7 @@ export function AdminSidebar() {
               gap: 1.2,
               minWidth: 0,
               cursor: 'pointer',
-              p: 0.5,
+              p: 0.6,
               borderRadius: '8px',
               transition: 'all 0.2s',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
@@ -116,20 +170,20 @@ export function AdminSidebar() {
           >
             <Avatar
               sx={{
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 backgroundColor: '#3B82F6',
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 fontWeight: 700,
               }}
             >
               {userInitial}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="body2" noWrap sx={{ fontWeight: 700, color: '#FFFFFF' }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.82rem' }}>
                 {displayName}
               </Typography>
-              <Typography variant="caption" noWrap sx={{ color: '#64748B', display: 'block' }}>
+              <Typography variant="caption" noWrap sx={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>
                 {user ? user.role : 'ADMIN'}
               </Typography>
             </Box>
@@ -167,7 +221,7 @@ export function AdminSidebar() {
             scrollbarWidth: 'none',
           }}
         >
-          {NAV_ITEMS.map((item) => {
+          {ALL_NAV_ITEMS.map((item) => {
             const isActive = pathname === item.path || (item.path === '/orders' && pathname.startsWith('/orders/'));
             return (
               <Chip

@@ -156,39 +156,6 @@ export function Navbar() {
               </Box>
             </Box>
 
-            {/* Desktop Navigation Links */}
-            <Box sx={{ display: { xs: 'none', lg: 'flex' }, alignItems: 'center', gap: 0.8 }}>
-              {NAV_LINKS.map((link) => {
-                const isActive = pathname === link.path || (link.path === '/pos' && pathname === '/');
-
-                return (
-                  <Button
-                    key={link.path}
-                    component={Link}
-                    href={link.path}
-                    startIcon={link.icon}
-                    size="small"
-                    sx={{
-                      color: isActive ? '#FF7A00' : '#CBD5E1',
-                      backgroundColor: isActive ? 'rgba(255, 122, 0, 0.12)' : 'transparent',
-                      border: isActive ? '1px solid rgba(255, 122, 0, 0.3)' : '1px solid transparent',
-                      fontWeight: isActive ? 700 : 500,
-                      fontSize: '0.825rem',
-                      borderRadius: '8px',
-                      px: 1.4,
-                      py: 0.7,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        color: '#FFFFFF',
-                      },
-                    }}
-                  >
-                    {link.label}
-                  </Button>
-                );
-              })}
-            </Box>
-
             {/* Right Controls: Real-time Socket Indicator & User */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.5 } }}>
               {/* Global Real-time Notification Popover */}
