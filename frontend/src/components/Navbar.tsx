@@ -84,7 +84,7 @@ export function Navbar() {
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
         }}
       >
-        <Container maxWidth="xl" sx={{ px: { xs: 1.5, sm: 2.5 } }}>
+        <Box sx={{ px: { xs: 2, sm: 3 } }}>
           <Toolbar disableGutters sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 64 } }}>
             {/* Left: Mobile Menu Toggle + Brand Logo & Title */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
@@ -225,7 +225,7 @@ export function Navbar() {
               )}
             </Box>
           </Toolbar>
-        </Container>
+        </Box>
       </AppBar>
 
       {/* Mobile Slide-Out Navigation Drawer */}

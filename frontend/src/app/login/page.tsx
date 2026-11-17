@@ -14,6 +14,7 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -445,7 +446,7 @@ function LoginContent() {
             </Box>
 
             {!isRegistering && (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: -0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: -0.5 }}>
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -457,31 +458,6 @@ function LoginContent() {
                   }
                   label={<Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>Remember me</Typography>}
                 />
-                <Typography
-                  variant="body2"
-                  component="button"
-                  type="button"
-                  onClick={() => {
-                    setForgotEmail(email || '');
-                    setForgotError(null);
-                    setForgotSuccessMessage(null);
-                    setDevResetUrl(null);
-                    setIsForgotModalOpen(true);
-                  }}
-                  sx={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    color: '#FF7A00',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline' },
-                  }}
-                >
-                  Forgot password?
-                </Typography>
               </Box>
             )}
 
@@ -509,186 +485,70 @@ function LoginContent() {
                 'Sign In'
               )}
             </Button>
+
+            {/* Quick 1-Click Demo Login Credentials for Interview */}
+            {!isRegistering && (
+              <Box sx={{ mt: 2.5 }}>
+                <Divider sx={{ my: 1.5, borderColor: '#E2E8F0' }}>
+                  <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', fontSize: '0.68rem' }}>
+                    QUICK DEMO ACCESS
+                  </Typography>
+                </Divider>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.2 }}>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      setEmail('admin@storepulse.com');
+                      setPassword('admin123');
+                      enqueueSnackbar('👑 SuperAdmin credentials filled.', { variant: 'info', autoHideDuration: 2500 });
+                    }}
+                    sx={{
+                      borderRadius: '10px',
+                      borderColor: '#CBD5E1',
+                      color: '#0F172A',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      py: 0.9,
+                      textTransform: 'none',
+                      backgroundColor: '#F8FAFC',
+                      '&:hover': { borderColor: '#3B82F6', backgroundColor: '#EFF6FF', color: '#1D4ED8' },
+                    }}
+                  >
+                    👑 SuperAdmin
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      setEmail('central_admin@storepulse.com');
+                      setPassword('admin123');
+                      enqueueSnackbar('🛡️ Store Admin credentials filled.', { variant: 'info', autoHideDuration: 2500 });
+                    }}
+                    sx={{
+                      borderRadius: '10px',
+                      borderColor: '#CBD5E1',
+                      color: '#0F172A',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      py: 0.9,
+                      textTransform: 'none',
+                      backgroundColor: '#F8FAFC',
+                      '&:hover': { borderColor: '#FF7A00', backgroundColor: '#FFF7ED', color: '#EA580C' },
+                    }}
+                  >
+                    🛡️ Store Admin
+                  </Button>
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
       </Box>
-
-      {/* Forgot Password Dialog */}
-      <Dialog
-        open={isForgotModalOpen}
-        onClose={() => {
-          if (!isForgotLoading) {
-            setIsForgotModalOpen(false);
-          }
-        }}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            p: 1,
-            boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-          },
-        }}
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: '12px',
-                backgroundColor: '#FFF7ED',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FF7A00',
-              }}
-            >
-              <LockResetIcon fontSize="medium" />
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '1.15rem' }}>
-                Reset Password
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#64748B' }}>
-                Secure link will be sent to your inbox
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton
-            onClick={() => setIsForgotModalOpen(false)}
-            disabled={isForgotLoading}
-            size="small"
-            sx={{ color: '#94A3B8' }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-
-        <Box component="form" onSubmit={handleForgotPasswordSubmit}>
-          <DialogContent sx={{ pt: 1, pb: 2 }}>
-            <Typography variant="body2" sx={{ color: '#475569', mb: 2.5, lineHeight: 1.5 }}>
-              Enter the email address associated with your account. We will send you a one-time link valid for 15 minutes.
-            </Typography>
-
-            {forgotError && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: '10px' }}>
-                {forgotError}
-              </Alert>
-            )}
-
-            {forgotSuccessMessage && (
-              <Box sx={{ mb: 2, textAlign: 'center', py: 1 }}>
-                <Box
-                  sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: '50%',
-                    backgroundColor: '#ECFDF5',
-                    color: '#10B981',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 16px',
-                  }}
-                >
-                  <EmailOutlinedIcon sx={{ fontSize: 32 }} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', mb: 1 }}>
-                  Reset Link Dispatched!
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#475569', mb: 2, lineHeight: 1.6 }}>
-                  We have sent an email with your secure password reset link to:
-                  <br />
-                  <strong style={{ color: '#0F172A' }}>{forgotEmail}</strong>
-                </Typography>
-                <Alert severity="info" sx={{ borderRadius: '12px', textAlign: 'left' }}>
-                  Please open your <strong>Gmail inbox (or Spam folder)</strong> and click the <strong>Reset Password</strong> button inside the email to set your new password.
-                </Alert>
-              </Box>
-            )}
-
-            {!forgotSuccessMessage && (
-              <TextField
-                fullWidth
-                type="email"
-                label="Registered Email"
-                placeholder="you@example.com"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                disabled={isForgotLoading}
-                autoFocus
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EmailOutlinedIcon sx={{ color: '#94A3B8' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    '&.Mui-focused fieldset': { borderColor: '#FF7A00' },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': { color: '#FF7A00' },
-                }}
-              />
-            )}
-          </DialogContent>
-
-          <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-            <Button
-              onClick={() => setIsForgotModalOpen(false)}
-              disabled={isForgotLoading}
-              variant="text"
-              sx={{ color: '#64748B', borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
-            >
-              {forgotSuccessMessage ? 'Close' : 'Cancel'}
-            </Button>
-
-            {!forgotSuccessMessage ? (
-              <Button
-                type="submit"
-                disabled={isForgotLoading || !forgotEmail.trim()}
-                variant="contained"
-                sx={{
-                  backgroundColor: '#FF7A00',
-                  color: '#FFFFFF',
-                  borderRadius: '10px',
-                  px: 3,
-                  py: 1,
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  '&:hover': { backgroundColor: '#E06500' },
-                  boxShadow: '0 4px 12px rgba(255, 122, 0, 0.3)',
-                }}
-              >
-                {isForgotLoading ? <CircularProgress size={20} color="inherit" /> : 'Send Reset Link'}
-              </Button>
-            ) : (
-              <Button
-                onClick={() => {
-                  setForgotSuccessMessage(null);
-                  setDevResetUrl(null);
-                  setForgotEmail('');
-                }}
-                variant="outlined"
-                sx={{
-                  borderColor: '#E2E8F0',
-                  color: '#475569',
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                }}
-              >
-                Send Another
-              </Button>
-            )}
-          </DialogActions>
-        </Box>
-      </Dialog>
     </Box>
   );
 }
