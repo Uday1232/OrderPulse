@@ -34,6 +34,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PrintIcon from '@mui/icons-material/Print';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { useAuth } from '../../hooks/useAuth';
 import { ApiService } from '../../services/api';
@@ -229,13 +230,42 @@ export default function MyOrdersPage() {
   return (
     <Box sx={{ minHeight: 'calc(100vh - 70px)', backgroundColor: '#F8FAFC', py: { xs: 2.5, sm: 4 } }}>
       <Container maxWidth="lg">
+        {/* Back Navigation Button */}
+        <Button
+          component={Link}
+          href="/pos"
+          startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
+          sx={{
+            color: '#475569',
+            fontWeight: 700,
+            fontSize: '0.84rem',
+            mb: 2.5,
+            textTransform: 'none',
+            px: 1.8,
+            py: 0.65,
+            borderRadius: '10px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            width: 'fit-content',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              backgroundColor: '#FFF7ED',
+              borderColor: '#FF7A00',
+              color: '#EA580C',
+            },
+          }}
+        >
+          Back to Order Menu
+        </Button>
+
         {/* Header Section */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: 3.5,
+            mb: 3,
             flexWrap: 'wrap',
             gap: 2,
           }}
@@ -264,9 +294,6 @@ export default function MyOrdersPage() {
                 }}
               />
             </Box>
-            <Typography variant="body2" sx={{ color: '#64748B', mt: 0.5 }}>
-              Backend-powered search, live status filtering, and digital receipts in real-time.
-            </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -320,7 +347,7 @@ export default function MyOrdersPage() {
           }}
         >
           <Grid container spacing={2} alignItems="center">
-            {/* Search Input */}
+            {/* Search Input with high contrast visible text */}
             <Grid item xs={12} md={5}>
               <TextField
                 value={searchInput}
@@ -328,16 +355,37 @@ export default function MyOrdersPage() {
                 placeholder="Search by Order ID or item..."
                 size="small"
                 fullWidth
+                inputProps={{
+                  sx: {
+                    color: '#0F172A !important',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    '&::placeholder': {
+                      color: '#64748B !important',
+                      opacity: 1,
+                    },
+                  },
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#94A3B8', fontSize: 20 }} />
+                      <SearchIcon sx={{ color: '#64748B', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                   sx: {
                     borderRadius: '10px',
-                    fontSize: '0.85rem',
+                    fontSize: '0.875rem',
                     backgroundColor: '#F8FAFC',
+                    color: '#0F172A !important',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#E2E8F0',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#CBD5E1',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#FF7A00',
+                    },
                   },
                 }}
               />
@@ -362,7 +410,8 @@ export default function MyOrdersPage() {
                       fontSize: '0.75rem',
                       cursor: 'pointer',
                       backgroundColor: statusFilter === st.id ? '#0F172A' : '#F1F5F9',
-                      color: statusFilter === st.id ? '#FFFFFF' : '#475569',
+                      color: statusFilter === st.id ? '#FFFFFF !important' : '#475569',
+                      border: statusFilter === st.id ? '1px solid #0F172A' : '1px solid #E2E8F0',
                       '&:hover': {
                         backgroundColor: statusFilter === st.id ? '#1E293B' : '#E2E8F0',
                       },
@@ -372,7 +421,7 @@ export default function MyOrdersPage() {
               </Box>
             </Grid>
 
-            {/* Store Filter Dropdown */}
+            {/* Store Filter Dropdown with visible text */}
             <Grid item xs={12} sm={5} md={3}>
               <FormControl size="small" fullWidth>
                 <Select
@@ -383,6 +432,49 @@ export default function MyOrdersPage() {
                     borderRadius: '10px',
                     fontSize: '0.85rem',
                     backgroundColor: '#F8FAFC',
+                    color: '#0F172A !important',
+                    fontWeight: 600,
+                    '& .MuiSelect-select': {
+                      color: '#0F172A !important',
+                      fontWeight: 600,
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#E2E8F0',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#CBD5E1',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#FF7A00',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      color: '#64748B',
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: '#FFFFFF',
+                        color: '#0F172A',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
+                        border: '1px solid #E2E8F0',
+                        '& .MuiMenuItem-root': {
+                          fontSize: '0.85rem',
+                          color: '#1E293B',
+                          fontWeight: 500,
+                          '&:hover': {
+                            backgroundColor: '#FFF7ED',
+                            color: '#EA580C',
+                          },
+                          '&.Mui-selected': {
+                            backgroundColor: '#FFEDD5',
+                            color: '#C2410C',
+                            fontWeight: 700,
+                          },
+                        },
+                      },
+                    },
                   }}
                 >
                   <MenuItem value="ALL">All Stores ({stores.length})</MenuItem>
