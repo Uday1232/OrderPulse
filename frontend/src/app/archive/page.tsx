@@ -62,7 +62,7 @@ export default function ArchiveOrdersPage() {
             Archive Old Orders
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748B' }}>
-            Move orders older than 30 days to the archive table to optimize active database performance
+            Archive orders older than 30 days to keep your active list clean and organized
           </Typography>
         </Box>
 
@@ -78,7 +78,7 @@ export default function ArchiveOrdersPage() {
             fontSize: '0.9rem',
           }}
         >
-          This will move all orders older than 30 days to the <strong>order_archives</strong> table. The original orders will be safely moved in an atomic PostgreSQL transaction.
+          This will move all orders older than 30 days to the archive. All historical order records and receipts remain safely preserved.
         </Alert>
 
         {archivedResult && (
@@ -88,7 +88,7 @@ export default function ArchiveOrdersPage() {
             sx={{ mb: 4, borderRadius: '14px' }}
             onClose={() => setArchivedResult(null)}
           >
-            Successfully moved {archivedResult.count} orders to the archival database!
+            Successfully moved {archivedResult.count} orders to the archive!
           </Alert>
         )}
 

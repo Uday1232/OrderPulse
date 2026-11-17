@@ -71,7 +71,7 @@ export default function AnalyticsDashboardPage() {
     );
   }, [isAllStores, rawRevenuePerStore, selectedStore, selectedStoreObj, summary]);
 
-  // Pagination for Stores Breakdown (Assessment Task 3)
+  // Pagination for Stores Breakdown
   const [storePage, setStorePage] = useState(1);
   const storesPerPage = 4;
   const totalStorePages = Math.max(Math.ceil(rawRevenuePerStore.length / storesPerPage), 1);
@@ -194,7 +194,7 @@ export default function AnalyticsDashboardPage() {
             </Grid>
           </Grid>
 
-          {/* Section 2: Orders Per Day (Full Width Chart - Assessment Task 3) */}
+          {/* Section 2: Orders Per Day (Full Width Chart) */}
           <Card sx={{ p: 3, mb: 3.5, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1 }}>
               <Box>
@@ -260,7 +260,7 @@ export default function AnalyticsDashboardPage() {
             )}
           </Card>
 
-          {/* Section 3 & 4: Total Revenue Per Store & Top 5 Selling Items (50/50 Grid - Assessment Task 3) */}
+          {/* Section 3 & 4: Total Revenue Per Store & Top 5 Selling Items (50/50 Grid) */}
           <Grid container spacing={3}>
             {/* 1. Total Revenue Per Store (With Store Dropdown Filter & Pagination) */}
             <Grid item xs={12} lg={6}>
@@ -409,7 +409,7 @@ export default function AnalyticsDashboardPage() {
                         })}
                       </Stack>
 
-                      {/* Pagination Controls for Stores (Assessment Requirement) */}
+                      {/* Pagination Controls for Stores */}
                       {totalStorePages > 1 && (
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid #F1F5F9' }}>
                           <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
@@ -533,7 +533,7 @@ export default function AnalyticsDashboardPage() {
               </Card>
             </Grid>
 
-            {/* 2. Top 5 Selling Items (JSONB Aggregation - Assessment Task 3) */}
+            {/* 2. Top 5 Selling Items */}
             <Grid item xs={12} lg={6}>
               <Card sx={{ p: 3, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -542,7 +542,7 @@ export default function AnalyticsDashboardPage() {
                       Top 5 Selling Items
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
-                      {isAllStores ? 'PostgreSQL JSONB dish ranking across all stores' : `Top selling dishes for ${selectedStoreObj?.name}`}
+                      {isAllStores ? 'Best-selling dishes across all stores' : `Top selling dishes for ${selectedStoreObj?.name}`}
                     </Typography>
                   </Box>
                   <Chip

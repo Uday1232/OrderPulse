@@ -8,7 +8,7 @@ import { RealtimeAlert } from '../components/RealtimeAlert';
 
 export const metadata: Metadata = {
   title: 'StorePulse POS - Multi-Store Restaurant Order Management',
-  description: 'Production-ready restaurant POS platform and multi-store management system with real-time tracking, Redis caching, and analytics.',
+  description: 'Restaurant POS platform and multi-store management system with real-time order tracking and sales analytics.',
   icons: {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },

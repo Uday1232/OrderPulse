@@ -222,7 +222,7 @@ export default function UserManagementPage() {
                 {currentUser?.role === 'SUPERADMIN' ? (
                   <Chip
                     icon={<SecurityIcon sx={{ fontSize: 16 }} />}
-                    label="👑 SuperAdmin Master"
+                    label="Super Admin"
                     size="small"
                     sx={{ backgroundColor: '#4338CA', color: '#FFFFFF', fontWeight: 800 }}
                   />

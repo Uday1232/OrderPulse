@@ -501,7 +501,7 @@ export default function MyOrdersPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 10 }}>
             <CircularProgress sx={{ color: '#FF7A00', mb: 2 }} />
             <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 600 }}>
-              Loading your orders from backend...
+              Loading your orders...
             </Typography>
           </Box>
         ) : orders.length === 0 ? (

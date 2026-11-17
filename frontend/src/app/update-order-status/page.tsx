@@ -113,7 +113,7 @@ function UpdateOrderStatusContent() {
       if (typed && typed.id === activeOrderId) {
         queryClient.setQueryData(['order', activeOrderId], { success: true, data: typed });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
-        setSuccessMessage(`Order updated to ${typed.status} via real-time WebSocket event.`);
+        setSuccessMessage(`Order updated to ${typed.status} successfully.`);
       }
     };
 
@@ -204,13 +204,13 @@ function UpdateOrderStatusContent() {
             Update Order Status
           </Typography>
           <Typography variant="body1" sx={{ color: '#9CA3AF', mt: 0.5, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
-            Manage order workflow lifecycle with PostgreSQL row-level concurrency locking and real-time synchronization.
+            Manage order workflow lifecycle with real-time status updates.
           </Typography>
         </Box>
 
         <Chip
-          icon={<LockIcon sx={{ fontSize: '1rem !important', color: '#10B981' }} />}
-          label="Row-Level Lock Protected (SELECT ... FOR UPDATE)"
+          icon={<CheckCircleIcon sx={{ fontSize: '1rem !important', color: '#10B981' }} />}
+          label="Live Status Sync"
           sx={{
             backgroundColor: 'rgba(16, 185, 129, 0.1)',
             color: '#34D399',
@@ -233,7 +233,7 @@ function UpdateOrderStatusContent() {
       >
         <form onSubmit={handleSearchSubmit}>
           <Typography variant="subtitle2" sx={{ color: '#E5E7EB', fontWeight: 700, mb: 1.5 }}>
-            Enter Order UUID or Select Below
+            Enter Order ID or Select Below
           </Typography>
           <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField
@@ -316,7 +316,7 @@ function UpdateOrderStatusContent() {
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <CircularProgress sx={{ color: '#F59E0B' }} />
           <Typography variant="body2" sx={{ color: '#9CA3AF', mt: 2 }}>
-            Fetching order details from database...
+            Loading order details...
           </Typography>
         </Box>
       )}
@@ -328,7 +328,7 @@ function UpdateOrderStatusContent() {
             Order Not Found
           </Typography>
           <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 2 }}>
-            {(orderError as Error)?.message || `No order found with UUID "${activeOrderId}".`}
+            {(orderError as Error)?.message || `No order found with ID "${activeOrderId}".`}
           </Typography>
           <Button variant="outlined" color="warning" onClick={() => setInputOrderId('')}>
             Clear Search
@@ -360,7 +360,7 @@ function UpdateOrderStatusContent() {
                     <Typography variant="h6" sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#FFFFFF', fontSize: { xs: '0.85rem', sm: '1rem', md: '1.25rem' }, wordBreak: 'break-all' }}>
                       {order.id}
                     </Typography>
-                    <Tooltip title={copied ? 'Copied!' : 'Copy UUID'}>
+                    <Tooltip title={copied ? 'Copied!' : 'Copy Order ID'}>
                       <IconButton size="small" onClick={() => handleCopyId(order.id)} sx={{ color: '#9CA3AF' }}>
                         <ContentCopyIcon fontSize="small" />
                       </IconButton>
@@ -619,7 +619,7 @@ function UpdateOrderStatusContent() {
             No Order Loaded
           </Typography>
           <Typography variant="body2" sx={{ color: '#9CA3AF', maxWidth: 480, mx: 'auto', mb: 3 }}>
-            Enter an Order UUID in the search bar above or pick one of the recent orders to view its lifecycle and update its status.
+            Enter an Order ID in the search bar above or pick one of the recent orders to view and update its status.
           </Typography>
         </Card>
       )}

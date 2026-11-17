@@ -344,7 +344,7 @@ export default function OrderDetailsClient({ initialOrderId }: OrderDetailsClien
             {/* Bottom Card: Visual Stepper for Status Update */}
             <Card sx={{ p: 4, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', mb: 3 }}>
-                Update Order Status (Row-Level Locked Transaction)
+                Update Order Status
               </Typography>
 
               {/* Visual Horizontal Timeline / Stepper */}
