@@ -30,7 +30,6 @@ import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
@@ -129,26 +128,8 @@ export function PosSidebar({
             '&::-webkit-scrollbar-thumb': { backgroundColor: '#E2E8F0', borderRadius: '4px' },
           }}
         >
-          {/* ==================================================== */}
-          {/* 1. REQUIRED NAVIGATION LINKS                         */}
-          {/* ==================================================== */}
+          {/* 1. Quick Navigation Links */}
           <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 800,
-                color: '#94A3B8',
-                letterSpacing: '0.08em',
-                fontSize: '0.68rem',
-                textTransform: 'uppercase',
-                px: 1,
-                mb: 1,
-                display: 'block',
-              }}
-            >
-              NAVIGATION
-            </Typography>
-
             <Stack spacing={0.6}>
               {/* Order Menu */}
               <Button
@@ -178,8 +159,10 @@ export function PosSidebar({
                   backgroundColor: pathname === '/pos' || pathname === '/' ? 'rgba(255, 122, 0, 0.08)' : 'transparent',
                   color: pathname === '/pos' || pathname === '/' ? '#FF7A00' : '#334155',
                   fontWeight: pathname === '/pos' || pathname === '/' ? 700 : 600,
-                  fontSize: '0.825rem',
+                  fontSize: '0.85rem',
                   textTransform: 'none',
+                  borderLeft: pathname === '/pos' || pathname === '/' ? '3px solid #FF7A00' : '3px solid transparent',
+                  transition: 'all 0.15s ease',
                   '&:hover': { backgroundColor: 'rgba(255, 122, 0, 0.12)' },
                 }}
               >
@@ -214,8 +197,10 @@ export function PosSidebar({
                   backgroundColor: pathname === '/my-orders' ? 'rgba(255, 122, 0, 0.08)' : 'transparent',
                   color: pathname === '/my-orders' ? '#FF7A00' : '#334155',
                   fontWeight: pathname === '/my-orders' ? 700 : 600,
-                  fontSize: '0.825rem',
+                  fontSize: '0.85rem',
                   textTransform: 'none',
+                  borderLeft: pathname === '/my-orders' ? '3px solid #FF7A00' : '3px solid transparent',
+                  transition: 'all 0.15s ease',
                   '&:hover': { backgroundColor: 'rgba(255, 122, 0, 0.12)' },
                 }}
               >
@@ -249,49 +234,14 @@ export function PosSidebar({
                     borderRadius: '10px',
                     color: '#D97706',
                     fontWeight: 600,
-                    fontSize: '0.825rem',
+                    fontSize: '0.85rem',
                     textTransform: 'none',
+                    borderLeft: '3px solid transparent',
+                    transition: 'all 0.15s ease',
                     '&:hover': { backgroundColor: '#FFFBEB' },
                   }}
                 >
                   Special Deals
-                </Button>
-              )}
-
-              {/* Admin Shortcuts */}
-              {isAdmin && (
-                <Button
-                  component={Link}
-                  href="/analytics"
-                  startIcon={
-                    <Box
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: '8px',
-                        backgroundColor: '#EFF6FF',
-                        color: '#2563EB',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <BarChartIcon sx={{ fontSize: 16 }} />
-                    </Box>
-                  }
-                  sx={{
-                    justifyContent: 'flex-start',
-                    px: 1.2,
-                    py: 0.8,
-                    borderRadius: '10px',
-                    color: '#2563EB',
-                    fontWeight: 600,
-                    fontSize: '0.825rem',
-                    textTransform: 'none',
-                    '&:hover': { backgroundColor: '#EFF6FF' },
-                  }}
-                >
-                  Analytics Dashboard
                 </Button>
               )}
             </Stack>
@@ -745,19 +695,34 @@ export function PosSidebar({
 
   return (
     <>
-      {/* Desktop Sticky Sidebar */}
+      {/* Desktop Placeholder Spacer (reserves exact width in flex layout so catalog content is offset correctly) */}
       <Box
         sx={{
           width: { xs: 260, xl: 280 },
+          minWidth: { xs: 260, xl: 280 },
+          maxWidth: { xs: 260, xl: 280 },
           flexShrink: 0,
+          display: { xs: 'none', lg: 'block' },
+        }}
+      />
+
+      {/* Desktop Fixed Sidebar (permanently fixed on the left; does not move on scroll) */}
+      <Box
+        sx={{
+          width: { xs: 260, xl: 280 },
+          minWidth: { xs: 260, xl: 280 },
+          maxWidth: { xs: 260, xl: 280 },
+          position: 'fixed',
+          top: { xs: '56px', sm: '64px' },
+          left: 0,
+          bottom: 0,
+          height: { xs: 'calc(100vh - 56px)', sm: 'calc(100vh - 64px)' },
+          flexDirection: 'column',
           display: { xs: 'none', lg: 'flex' },
           backgroundColor: '#FFFFFF',
           color: '#1E293B',
           borderRight: '1px solid #E2E8F0',
-          height: 'calc(100vh - 64px)',
-          flexDirection: 'column',
-          position: 'sticky',
-          top: '64px',
+          zIndex: 100,
           overflow: 'hidden',
         }}
       >
