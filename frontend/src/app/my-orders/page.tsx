@@ -33,6 +33,7 @@ import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PrintIcon from '@mui/icons-material/Print';
 
 import { useAuth } from '../../hooks/useAuth';
 import { ApiService } from '../../services/api';
@@ -40,6 +41,7 @@ import { Order, OrderStatus, PaginationMeta } from '../../types/order';
 import { useOrderSocket } from '../../context/SocketContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useStores } from '../../hooks/useStores';
+import { printReceipt } from '../../utils/printReceipt';
 
 export default function MyOrdersPage() {
   const { user, isAuthenticated } = useAuth();
@@ -627,12 +629,14 @@ export default function MyOrdersPage() {
                     </Box>
                   )}
 
-                  {/* Footer Total */}
+                  {/* Footer Total & Actions */}
                   <Box
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 2,
                       pt: 0.5,
                     }}
                   >
@@ -657,6 +661,38 @@ export default function MyOrdersPage() {
                         }}
                       />
                     </Box>
+
+                    {/* Print / Download Invoice Button */}
+                    <Button
+                      onClick={() =>
+                        printReceipt(ord, {
+                          customerName: user?.name,
+                          storeName: ord.store?.name,
+                          storeLocation: ord.store?.location,
+                        })
+                      }
+                      variant="outlined"
+                      size="small"
+                      startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
+                      sx={{
+                        borderRadius: '10px',
+                        borderColor: '#CBD5E1',
+                        color: '#0F172A',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        textTransform: 'none',
+                        px: 2,
+                        py: 0.8,
+                        backgroundColor: '#F8FAFC',
+                        '&:hover': {
+                          backgroundColor: '#FFF7ED',
+                          borderColor: '#FF7A00',
+                          color: '#EA580C',
+                        },
+                      }}
+                    >
+                      Print Receipt / Invoice
+                    </Button>
                   </Box>
                 </Card>
               );

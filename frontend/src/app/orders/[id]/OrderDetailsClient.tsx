@@ -28,11 +28,13 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
+import PrintIcon from '@mui/icons-material/Print';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AdminSidebar } from '../../../components/admin/AdminSidebar';
 import { ApiService } from '../../../services/api';
 import { OrderStatus } from '../../../types/order';
+import { printReceipt } from '../../../utils/printReceipt';
 
 interface OrderDetailsClientProps {
   initialOrderId?: string;
@@ -134,27 +136,54 @@ export default function OrderDetailsClient({ initialOrderId }: OrderDetailsClien
                 />
               </Box>
 
-              <Button
-                variant="contained"
-                onClick={handleApplyStatusUpdate}
-                disabled={updateMutation.isPending || selectedStatus === order.status}
-                sx={{
-                  backgroundColor: '#0F172A',
-                  color: '#FFFFFF !important',
-                  fontWeight: 700,
-                  borderRadius: '12px',
-                  px: 3,
-                  py: 1.1,
-                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
-                  '&:hover': { backgroundColor: '#1E293B' },
-                  '&.Mui-disabled': {
-                    backgroundColor: '#E2E8F0 !important',
-                    color: '#94A3B8 !important',
-                  },
-                }}
-              >
-                {updateMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Update Status'}
-              </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => printReceipt(order)}
+                  startIcon={<PrintIcon sx={{ fontSize: 18 }} />}
+                  sx={{
+                    borderColor: '#CBD5E1',
+                    color: '#0F172A',
+                    fontWeight: 700,
+                    borderRadius: '12px',
+                    px: 2.5,
+                    py: 1.1,
+                    backgroundColor: '#FFFFFF',
+                    textTransform: 'none',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    '&:hover': {
+                      borderColor: '#FF7A00',
+                      backgroundColor: '#FFF7ED',
+                      color: '#EA580C',
+                    },
+                  }}
+                >
+                  Print Invoice
+                </Button>
+
+                <Button
+                  variant="contained"
+                  onClick={handleApplyStatusUpdate}
+                  disabled={updateMutation.isPending || selectedStatus === order.status}
+                  sx={{
+                    backgroundColor: '#0F172A',
+                    color: '#FFFFFF !important',
+                    fontWeight: 700,
+                    borderRadius: '12px',
+                    px: 3,
+                    py: 1.1,
+                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#1E293B' },
+                    '&.Mui-disabled': {
+                      backgroundColor: '#E2E8F0 !important',
+                      color: '#94A3B8 !important',
+                    },
+                  }}
+                >
+                  {updateMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Update Status'}
+                </Button>
+              </Box>
             </Box>
 
             {/* Two Cards: Order Information & Order Items */}
